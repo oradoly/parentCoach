@@ -10,16 +10,19 @@ import {
   revealSimilarProblemSolution,
   type CoachingVisibility,
 } from "./flow-rules"
+import { ImageIntakeScreen } from "./m2-screens"
 import { CoachingScreen, ErrorScreen, HomeScreen, RecognitionScreen } from "./m1-screens"
 import { mockCoachingResponse, mockRecognitionResponse } from "./mock-parent-coach"
+import { useImageIntake } from "./use-image-intake"
 
-type FlowStage = "home" | "recognition" | "coaching" | "error"
+type FlowStage = "home" | "intake" | "recognition" | "coaching" | "error"
 
 export function ParentCoachFlow() {
   const [stage, setStage] = useState<FlowStage>("home")
   const [isEditingRecognition, setIsEditingRecognition] = useState(false)
   const [problemDraft, setProblemDraft] = useState(mockRecognitionResponse.problemText)
   const [visibility, setVisibility] = useState<CoachingVisibility>(INITIAL_COACHING_VISIBILITY)
+  const imageIntake = useImageIntake()
 
   const canConfirmProblem = problemDraft.trim().length > 0
   const visibleHints = useMemo(
@@ -36,6 +39,7 @@ export function ParentCoachFlow() {
 
   const resetFlow = () => {
     setIsEditingRecognition(false)
+    imageIntake.resetImageIntake()
     setProblemDraft(mockRecognitionResponse.problemText)
     setVisibility(INITIAL_COACHING_VISIBILITY)
     setStage("home")
@@ -47,9 +51,28 @@ export function ParentCoachFlow() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {stage === "home" ? (
           <HomeScreen
-            onStart={startExampleRecognition}
+            onStart={() => {
+              setStage("intake")
+            }}
             onShowError={() => {
               setStage("error")
+            }}
+          />
+        ) : null}
+        {stage === "intake" ? (
+          <ImageIntakeScreen
+            state={imageIntake.state}
+            onBack={resetFlow}
+            onCapture={() => {
+              void imageIntake.chooseImage("camera")
+            }}
+            onContinue={startExampleRecognition}
+            onPickLibrary={() => {
+              void imageIntake.chooseImage("library")
+            }}
+            onReset={imageIntake.resetImageIntake}
+            onUpload={() => {
+              void imageIntake.uploadReadyImage()
             }}
           />
         ) : null}

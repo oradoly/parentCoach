@@ -111,6 +111,21 @@ All spacing derives from 4px.
 - **Spacing**: `spaceMd` horizontal padding, `spaceSm` vertical padding.
 - **Accessibility**: Do not rely on pill color alone to indicate state.
 
+### Image Intake Card
+
+- **Structure**: One guidance card, one state card, and action buttons for camera, library, upload, retry, and back.
+- **Variants**: Idle, working, ready, uploading, uploaded, cancelled, warning.
+- **Spacing**: `spaceLg` card padding, `spaceMd` internal gap, `spaceSm` action gap.
+- **States**: Permission denied, user cancelled, invalid file, upload failure, uploaded success.
+- **Accessibility**: Preview image must have an accessible label; actions use real button role and disabled state.
+
+### Image Preview
+
+- **Structure**: Full-width preview inside the intake state card.
+- **Sizing**: Stable minimum height of 180px, rounded with `radiusSm`, `cover` resize mode.
+- **States**: Preview appears only after a valid image is prepared.
+- **Accessibility**: The preview describes that it is the selected problem photo.
+
 ## 6. Motion & Interaction
 
 ### Timing

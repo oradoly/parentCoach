@@ -2,7 +2,7 @@
 
 초등학교 5~6학년 자녀의 수학 질문을 부모가 코칭하도록 돕는 모바일 앱입니다. 이 저장소는 제품 문서를 기준으로 MVP를 구현하기 위한 Expo 모바일 앱, TypeScript API, 공유 계약 패키지를 담습니다.
 
-현재 앱 첫 화면은 M1 mock 기반 부모 코칭 수직 흐름입니다. 홈, 촬영 placeholder, 인식 확인, 부모용 빠른 이해, 역질문, 3단계 힌트, 명시적 최종 풀이, 비슷한 문제, 오류 상태 예시를 실제 AI 없이 시연합니다. 실제 촬영, 업로드, OpenAI 호출, 데이터베이스는 아직 포함하지 않습니다.
+현재 앱 첫 화면은 M2 촬영·사진 선택·임시 업로드 흐름으로 시작합니다. 사진 업로드가 성공하면 M3 전까지는 M1 mock 인식 확인과 부모 코칭 수직 흐름으로 이어집니다. 실제 OpenAI 호출, OCR, 데이터베이스, 장기 저장은 아직 포함하지 않습니다.
 
 ## 문서
 
@@ -45,6 +45,12 @@ pnpm install
 
 비밀값은 서버 환경에만 둡니다. 실제 `.env`는 커밋하지 않고, 필요한 키 이름만 `.env.example`에 남깁니다. 모바일 앱에 `OPENAI_API_KEY`나 서버 비밀을 넣지 않습니다.
 
+모바일 앱에서 로컬 API 주소를 바꾸려면 비밀이 아닌 공개 값만 사용합니다.
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:3001
+```
+
 ## 실행
 
 ```bash
@@ -66,6 +72,16 @@ curl http://localhost:3001/health
   "schemaVersion": "1.0"
 }
 ```
+
+M2 임시 세션 API:
+
+```bash
+curl -X POST http://localhost:3001/v1/problem-sessions
+curl -X POST http://localhost:3001/v1/problem-sessions/{sessionId}/image
+curl -X DELETE http://localhost:3001/v1/problem-sessions/{sessionId}
+```
+
+이미지 업로드는 `multipart/form-data`의 `image` 필드를 사용합니다. 서버는 JPG, PNG, WebP만 받고 5MB를 넘는 파일은 거부합니다. 이번 단계에서는 원본 bytes를 영구 저장하지 않고 업로드 metadata만 임시 세션에 기록합니다.
 
 ## 검증
 

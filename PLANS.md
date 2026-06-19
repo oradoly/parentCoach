@@ -4,11 +4,143 @@
 
 ## 현재 작업
 
-- 상태: M1 구현 완료, 검증 통과
-- 작업명: M1 Mock 기반 부모 코칭 수직 흐름
+- 상태: M2 구현 완료, 브라우저/API 검증 통과
+- 작업명: M2 촬영·자르기·임시 업로드
 - 담당: Codex
-- 관련 백로그: `docs/06_MVP_BACKLOG.md`의 M1
+- 관련 백로그: `docs/06_MVP_BACKLOG.md`의 M2
 - 작성일: 2026-06-20
+
+## M2 실행 계획
+
+### 1. Goal
+
+실제 문제 사진 한 장을 카메라 또는 사진 보관함에서 가져와, 사용자가 확인 가능한 전처리 상태로 만든 뒤, 임시 문제 세션 API에 안전하게 업로드하는 흐름을 구현한다.
+
+M2는 촬영/선택 권한, 한 문제 촬영 가이드, 편집 가능한 시스템 crop UI, 회전/리사이즈 전처리, 파일 형식·크기 검증, 임시 세션 생성, multipart 업로드, 취소·재시도, TTL 삭제 경로를 다룬다. 실제 AI 인식, OCR, 코칭 생성, 장기 저장소, 계정, 원본 이미지 영구 저장은 만들지 않는다.
+
+### 2. Product constraints
+
+- 부모가 주 사용자다. 촬영 화면 문구는 부모에게 “문제 하나만 안전하게 담기”를 안내한다.
+- 사진에서 읽은 문제를 사용자가 확인·수정하기 전에는 코칭을 확정하지 않는다.
+- 여러 문제를 임의 선택하지 않는다. 사용자가 문제 하나만 crop하도록 안내한다.
+- 이름, 학교, 얼굴, 위치 정보 같은 개인정보는 가능하면 제외하도록 안내한다.
+- 모바일 번들에는 OpenAI/API 비밀키를 넣지 않는다.
+- 서버는 업로드된 원본 이미지를 운영 로그에 남기지 않고, 이번 M2에서는 파일 bytes를 영구 보관하지 않는다.
+- AI 인식 실패/지원 불가 분기는 M3에서 구현하며, M2에서는 업로드 성공 후 기존 mock 인식 확인 흐름으로 연결한다.
+
+### 3. Proposed implementation
+
+- `packages/contracts`에 임시 문제 세션, 이미지 업로드, 삭제, 오류 응답 스키마를 추가한다.
+- `apps/api`에 인메모리 임시 세션 store를 추가한다.
+  - `POST /v1/problem-sessions`: 임시 세션 생성
+  - `POST /v1/problem-sessions/:sessionId/image`: multipart 이미지 수신, MIME/크기 검증, metadata만 기록
+  - `DELETE /v1/problem-sessions/:sessionId`: 세션 삭제
+  - TTL이 지난 세션은 조회/업로드 시 삭제하고 만료 오류를 반환한다.
+- `apps/mobile`에 Expo 이미지 intake 계층을 추가한다.
+  - `expo-image-picker`: 카메라/사진 권한, 촬영, 사진 선택, 시스템 편집 UI
+  - `expo-image-manipulator`: 최대 긴 변 기준 리사이즈, JPEG 저장, 새 파일 생성으로 EXIF 위치 제거 성격의 전처리
+  - `expo-file-system/legacy`: multipart 업로드
+- `ParentCoachFlow`에 M2 intake stage를 추가한다. 업로드 성공 뒤에는 M3 전까지 기존 mock recognition 화면으로 연결한다.
+- `DESIGN.md`와 `README.md`에 M2 intake/upload 상태와 실행 조건을 반영한다.
+
+### 4. Testing
+
+- 계약 테스트
+  - 임시 세션 응답, 업로드 응답, 삭제 응답, 오류 응답이 schema를 통과한다.
+  - 허용 MIME과 크기 상수가 계약에 고정된다.
+- API 테스트
+  - 세션 생성 → multipart 이미지 업로드 → metadata 응답
+  - unsupported MIME 거부
+  - size limit 초과 거부
+  - 삭제 후 업로드 거부
+  - TTL 만료 후 업로드 거부
+- 모바일 순수 로직 테스트
+  - 이미지 MIME 정규화와 확장자 fallback
+  - 큰 이미지는 긴 변 기준 리사이즈 계획을 만든다.
+  - 허용되지 않은 파일 형식/크기를 사용자 문구로 변환한다.
+
+### 5. Verification commands
+
+```bash
+CI=true pnpm format:check
+CI=true pnpm lint
+CI=true pnpm typecheck
+CI=true pnpm test
+CI=true pnpm eval
+CI=true pnpm --filter @parent-coach/mobile exec expo install --check
+CI=true pnpm --filter @parent-coach/mobile exec expo export --platform web
+```
+
+수동 QA:
+
+- API는 로컬 서버에서 `POST /v1/problem-sessions`, multipart image upload, `DELETE /v1/problem-sessions/:id`를 실제 HTTP 표면으로 확인한다.
+- 모바일 UI는 Expo web export를 열어 375px, 768px, 1280px에서 홈 → 촬영/업로드 안내 화면 → 권한/오류/재시도 상태가 깨지지 않는지 확인한다.
+- 실제 iOS/Android 기기 카메라 권한과 native file upload는 로컬 기기 연결이 가능할 때 추가 확인한다. 이번 자동 QA에서는 브라우저와 API 표면으로 대체한다.
+
+### 6. Risks and mitigations
+
+- **네이티브 카메라 QA 제약:** 이 환경은 실제 휴대폰 권한 UI를 직접 확인하기 어렵다.
+  - 대응: Expo web export로 화면 상태를 검증하고, native-only 권한/업로드는 코드 경로와 타입 검증으로 고정한다.
+- **원본 이미지 보관 위험:** 업로드 bytes를 서버에 저장하면 개인정보 처리 범위가 커진다.
+  - 대응: M2 API는 metadata만 저장하고 bytes는 요청 처리 중 검증 후 버린다.
+- **기기별 localhost 문제:** 실제 휴대폰에서 `localhost`는 기기 자신을 가리킨다.
+  - 대응: `EXPO_PUBLIC_API_BASE_URL`로 API base URL을 바꿀 수 있게 한다.
+- **M3 범위 침범:** 업로드 성공 후 OCR/AI를 만들고 싶어질 수 있다.
+  - 대응: 업로드 성공 뒤 기존 mock recognition으로만 이동한다.
+
+### 7. Done when
+
+- [x] 카메라/사진 선택 진입 화면이 실제 앱 흐름에 연결된다.
+- [x] 권한 거부, 선택 취소, 전처리 실패, 업로드 실패, 재시도 상태가 보인다.
+- [x] 업로드 전 이미지 MIME/크기/리사이즈 규칙이 테스트로 고정된다.
+- [x] API가 임시 세션 생성, multipart 업로드, 삭제, TTL 만료를 처리한다.
+- [x] 서버는 원본 이미지 bytes를 영구 저장하지 않는다.
+- [x] 업로드 성공 뒤 M3 전까지 mock recognition 확인 화면으로 연결된다.
+- [x] 모바일 번들에 비밀키가 추가되지 않는다.
+- [x] 검증 명령과 브라우저/API QA가 통과한다.
+- [x] 제품 불변조건과 충돌이 없음을 검토한다.
+
+### 8. Result
+
+- 계약: `packages/contracts`에 임시 문제 세션, 이미지 업로드 metadata, 삭제, 오류 응답 스키마를 추가했다.
+- API: `apps/api`에 인메모리 TTL 세션 store와 `POST /v1/problem-sessions`, `POST /v1/problem-sessions/:sessionId/image`, `DELETE /v1/problem-sessions/:sessionId`를 추가했다.
+- 모바일: `apps/mobile`에 촬영/사진 선택, 시스템 편집 UI, 리사이즈/전처리, multipart 업로드 client, 촬영/업로드 상태 화면을 연결했다.
+- UX: 업로드 성공 뒤에는 M3 전까지 기존 mock recognition 확인 화면으로 이어진다.
+- 문서: `README.md`, `DESIGN.md`, `.env.example`에 M2 실행·상태·공개 API base URL을 반영했다.
+
+### 9. Verification evidence
+
+2026-06-20에 아래 명령을 fresh run으로 확인했다.
+
+- `CI=true pnpm format:check`
+- `CI=true pnpm lint`
+- `CI=true pnpm typecheck`
+- `CI=true pnpm test` → 7 files / 28 tests pass
+- `CI=true pnpm eval`
+- `CI=true pnpm --filter @parent-coach/mobile exec expo install --check`
+- `CI=true pnpm --filter @parent-coach/mobile exec expo export --platform web`
+
+수동/표면 QA:
+
+- API 서버를 `http://127.0.0.1:3001`에 띄워 실제 HTTP 요청으로 확인했다.
+- `POST /v1/problem-sessions`가 `201`과 `ps_...` 세션을 반환했다.
+- `multipart/form-data`의 `image` 필드로 JPEG를 업로드했고 `201`, `imageStatus: uploaded`, `retained: false`를 확인했다.
+- `DELETE /v1/problem-sessions/:sessionId`가 `200`, `imageStatus: deleted`를 반환했다.
+- Expo web export를 `http://127.0.0.1:4173/`로 열어 홈 → 촬영/업로드 안내 화면 이동을 확인했다.
+- 375px, 768px, 1280px 폭에서 홈과 M2 intake 화면의 수평 overflow가 없었다.
+- 브라우저 console error는 0건이었다.
+
+미확인:
+
+- 실제 iOS/Android 기기의 native 카메라 권한 다이얼로그와 `expo-file-system/legacy` native upload는 이 환경에서 직접 조작하지 못했다. 해당 경로는 타입검사, Expo export, API multipart 표면 검증으로 대체했다.
+
+### 10. Product invariant review
+
+- 충돌 없음: 부모가 주 사용자이며, 촬영 안내는 부모가 문제 하나를 안전하게 담도록 안내한다.
+- 충돌 없음: 업로드 성공 뒤에도 바로 정답이나 코칭 확정을 만들지 않고 인식 확인 화면으로 이어진다.
+- 충돌 없음: OpenAI/API 비밀키를 모바일 번들에 추가하지 않았다.
+- 충돌 없음: 서버는 M2에서 원본 image bytes를 영구 저장하지 않고 metadata만 임시 세션에 기록한다.
+- 충돌 없음: AI 인식, OCR, 장기 저장, 계정, 코칭 생성은 M3 이후로 남겼다.
 
 ## M1 실행 계획
 
