@@ -9,7 +9,7 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "vitest run",
-    "eval": "node -e \"console.log('M0 eval: fixtures and runners are placeholders; M3 will add executable AI evals.')\"",
+    "eval": "node -e \"console.log('Pre-M3 eval: fixtures and runners are placeholders; M3 will add executable AI evals.')\"",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

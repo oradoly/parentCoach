@@ -4,11 +4,124 @@
 
 ## 현재 작업
 
-- 상태: M0 구현 완료, 검증 통과
-- 작업명: M0 저장소 스캐폴딩 구현
+- 상태: M1 구현 완료, 검증 통과
+- 작업명: M1 Mock 기반 부모 코칭 수직 흐름
 - 담당: Codex
-- 관련 백로그: `docs/06_MVP_BACKLOG.md`의 M0
-- 작성일: 2026-06-19
+- 관련 백로그: `docs/06_MVP_BACKLOG.md`의 M1
+- 작성일: 2026-06-20
+
+## M1 실행 계획
+
+### 1. Goal
+
+AI 없이 mock 데이터로 부모 코칭 앱의 핵심 제품 경험을 실제 모바일 화면에서 검증한다.
+
+M1은 홈 → 촬영 placeholder → 인식 결과 확인/수정 → 부모용 빠른 이해 → 아이에게 할 첫 질문 → 힌트 1~3 점진 공개 → 명시적 최종 풀이 → 비슷한 문제와 접힌 답 → 오류 상태 mock까지 포함한다. 실제 OpenAI 호출, 카메라/이미지 업로드, 데이터베이스, 계정, 장기 기록은 만들지 않는다.
+
+### 2. Product constraints
+
+- 부모가 주 사용자다. 화면 문구는 부모에게 말한다.
+- 첫 화면, 부모용 빠른 이해, 역질문, 힌트 1·2에는 최종 답 `6컵`을 노출하지 않는다.
+- 사용자가 인식 결과를 확인하기 전에는 코칭 화면으로 넘어가지 않는다.
+- mock 문제는 대한민국 초등 5~6학년 수학 한 문제로 제한한다.
+- 실제 AI/API 호출과 서버 비밀키는 추가하지 않는다.
+- 오류 상태에서는 임의 풀이나 정답을 만들지 않는다.
+
+### 3. Proposed implementation
+
+- `packages/contracts`에 M1 mock flow에 필요한 Recognition/Coaching 논리 계약을 Zod schema와 readonly TypeScript type으로 추가한다.
+- `apps/mobile/src/mock-parent-coach.ts`에 문서 예시 기반 mock recognition, mock coaching, mock error state를 둔다.
+- `apps/mobile/src/flow-rules.ts`에 답 누출 방지용 순수 함수와 초기 visible state 계산을 둔다.
+- `apps/mobile/app/index.tsx`는 단일 화면 state machine으로 M1 흐름을 시연한다.
+- 반복 카드와 버튼 UI는 같은 파일 안의 작은 컴포넌트로 시작하되, 250 pure LOC를 넘기면 책임별 파일로 분리한다.
+- `DESIGN.md`에는 M1에서 새로 반복되는 버튼, 단계 표시, 코칭 카드 패턴을 추가한다.
+
+### 4. Testing
+
+- `packages/contracts/test/coaching.test.ts`
+  - mock recognition/coaching shape가 schema를 통과한다.
+  - 힌트 1·2에 forbidden answer leak이 없음을 확인한다.
+- `apps/mobile/test/flow-rules.test.ts`
+  - 초기 coaching preview에 최종 답이 노출되지 않는다.
+  - 힌트는 사용자 행동으로 한 단계씩 열린다.
+  - 최종 풀이와 비슷한 문제 답은 명시적 공개 뒤에만 visible이 된다.
+  - 오류 상태는 풀이/답 대신 다음 행동을 노출한다.
+
+### 5. Verification commands
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm eval
+pnpm --filter @parent-coach/mobile exec expo export --platform web
+pnpm --filter @parent-coach/mobile dev
+```
+
+수동 QA에서는 Expo/Metro를 띄우고 정상 흐름과 오류 상태를 화면에서 직접 확인한다. 가능하면 web export 또는 Expo web으로 스크린샷 기반 visual QA를 수행한다.
+
+### 6. Risks and mitigations
+
+- **M2 범위 침범:** 촬영/업로드를 실제 구현하지 않는다.
+  - 대응: 촬영은 placeholder 행동으로 mock recognition 화면으로 이동한다.
+- **답 누출:** mock copy에 최종 답이 초반 화면에 섞일 수 있다.
+  - 대응: flow rule test에서 힌트 1·2와 초기 preview의 금지 문자열을 검사한다.
+- **단일 화면 비대화:** M1 state machine이 커질 수 있다.
+  - 대응: 테스트 가능한 flow/model은 `src`로 분리하고 UI는 작은 컴포넌트로 쪼갠다.
+- **시각 QA 제약:** Expo native 화면은 이 환경에서 실제 기기 확인이 어려울 수 있다.
+  - 대응: Expo web/Metro로 가능한 범위를 확인하고, 실제 기기 미확인 여부는 결과에 명시한다.
+
+### 7. Done when
+
+- [x] 홈에서 mock 촬영 placeholder를 통해 인식 확인 화면으로 이동한다.
+- [x] 인식 결과를 수정하고 `맞아요`를 눌러야 코칭 화면으로 이동한다.
+- [x] 부모용 빠른 이해와 첫 질문이 먼저 보인다.
+- [x] 힌트 1~3이 버튼 행동으로 점진 공개된다.
+- [x] 최종 풀이와 비슷한 문제 답은 명시적 공개 뒤에만 보인다.
+- [x] 오류 상태 mock이 풀이 대신 재시도/다시 찍기 행동을 보여 준다.
+- [x] 첫 화면과 힌트 1·2에 최종 답이 없음을 테스트로 고정한다.
+- [x] `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm eval`이 통과한다.
+- [x] 제품 불변조건과 충돌이 없음을 검토한다.
+
+### 8. Result
+
+- 계약: `packages/contracts`에 recognition/coaching Zod schema와 readonly TypeScript type을 추가했다.
+- 모바일: `apps/mobile`에 mock 데이터, 답 노출 visibility rule, 부모 코칭 화면 state machine, M1 UI 컴포넌트를 추가했다.
+- 문서: `README.md`와 `DESIGN.md`에 M1 mock vertical flow와 반복 UI 패턴을 반영했다.
+- 도구: Expo web export 산출물이 lint 대상에 섞이지 않도록 ESLint ignore를 보강했다.
+
+### 9. Verification evidence
+
+2026-06-20에 아래 명령을 fresh run으로 확인했다.
+
+- `CI=true pnpm format:check`
+- `CI=true pnpm lint`
+- `CI=true pnpm typecheck`
+- `CI=true pnpm test` → 4 files / 13 tests pass
+- `CI=true pnpm eval`
+- `CI=true pnpm --filter @parent-coach/mobile exec expo install --check`
+- `CI=true pnpm --filter @parent-coach/mobile exec expo export --platform web`
+
+수동/브라우저 QA:
+
+- `apps/mobile/dist`를 `http://127.0.0.1:4173/`로 서빙해 확인했다.
+- 375px, 768px, 1280px 폭에서 홈 화면 수평 overflow가 없었다.
+- 인식 확인 화면에서 `직접 고칠게요`는 수정 안내만 켜고, `맞아요`만 코칭 화면으로 이동했다.
+- 코칭 첫 화면과 힌트 1·2에서는 `6컵`과 `10컵`이 노출되지 않았다.
+- `최종 풀이 보기`는 힌트 3개를 모두 보기 전에는 비활성화되고, 힌트 3개 뒤에 활성화됐다.
+- 최종 풀이 공개 뒤에만 `6컵`, 비슷한 문제 풀이 공개 뒤에만 `10컵`이 노출됐다.
+- 오류 상태는 답/풀이 없이 재시도 행동만 보여 줬다.
+- 브라우저 console error는 0건이었다.
+
+### 10. Product invariant review
+
+- 충돌 없음: 부모가 주 사용자이며, 문구는 부모가 아이에게 설명하기 전 준비하는 흐름으로 작성됐다.
+- 충돌 없음: 정답은 단계적 힌트 이후 명시적 클릭 전까지 숨긴다.
+- 충돌 없음: 인식 결과 확인 전에는 코칭으로 넘어가지 않는다.
+- 충돌 없음: mock 범위는 초등 5~6학년 수학 한 문제에 머문다.
+- 충돌 없음: 실제 OpenAI 호출, 카메라/업로드, DB, 계정, 장기 기록, 서버 비밀키를 추가하지 않았다.
+
+## M0 완료 기록
 
 ## 1. Goal
 

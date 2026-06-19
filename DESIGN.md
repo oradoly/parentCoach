@@ -86,6 +86,31 @@ All spacing derives from 4px.
 - **Accessibility**: Text must be readable with platform font scaling.
 - **Motion**: None in M0.
 
+### Coaching Card
+
+- **Structure**: Eyebrow, concise title, then one to four short key-value rows or one parent script.
+- **Variants**: Default, accent, warning, success.
+- **Spacing**: `spaceLg` padding, `spaceMd` internal gap.
+- **States**: Static; reveal is controlled by parent flow state.
+- **Accessibility**: Card title must make sense without the eyebrow.
+- **Motion**: Future reveal can use opacity/translate only.
+
+### Action Button
+
+- **Structure**: Single-line command label centered in a stable control.
+- **Variants**: Primary, secondary, ghost.
+- **Sizing**: Minimum height 48px for touch access.
+- **Spacing**: `spaceMd` horizontal padding, `spaceSm` vertical padding.
+- **States**: Pressed opacity, disabled opacity.
+- **Accessibility**: Use real button role and disabled state.
+
+### Step Pill
+
+- **Structure**: Short metadata label in a muted rounded surface.
+- **Variants**: Informational only.
+- **Spacing**: `spaceMd` horizontal padding, `spaceSm` vertical padding.
+- **Accessibility**: Do not rely on pill color alone to indicate state.
+
 ## 6. Motion & Interaction
 
 ### Timing
