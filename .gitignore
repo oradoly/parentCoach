@@ -1,2 +1,13 @@
 .DS_Store
 *.zip
+node_modules/
+.pnpm-store/
+dist/
+build/
+coverage/
+.expo/
+**/.expo/
+.turbo/
+.env
+.env.*
+!.env.example

@@ -4,8 +4,8 @@
 
 ## 현재 작업
 
-- 상태: 계획 작성 완료, 사용자 검토 대기
-- 작업명: M0 저장소 스캐폴딩 계획
+- 상태: M0 구현 완료, 검증 통과
+- 작업명: M0 저장소 스캐폴딩 구현
 - 담당: Codex
 - 관련 백로그: `docs/06_MVP_BACKLOG.md`의 M0
 - 작성일: 2026-06-19
@@ -14,7 +14,7 @@
 
 이 저장소의 제품 문서를 기준으로 MVP 개발 저장소의 M0 기반을 만든다.
 
-M0의 목표는 후속 작업이 같은 규칙, 폴더 구조, 타입 기준, 테스트 명령, CI 기준으로 진행되도록 하는 것이다. 이번 단계에서는 저장소 스캐폴딩 계획만 작성하며 기능 코드, 제품 화면, 실제 AI 호출은 만들지 않는다.
+M0의 목표는 후속 작업이 같은 규칙, 폴더 구조, 타입 기준, 테스트 명령, CI 기준으로 진행되도록 하는 것이다. 이번 단계에서는 저장소 스캐폴딩과 개발 확인용 health route/빈 Expo 화면까지만 만들며, 제품 기능 코드, 실제 AI 호출, 데이터베이스는 만들지 않는다.
 
 ## 2. User outcome
 
@@ -88,8 +88,12 @@ M0에서는 다음 최소 구조만 만든다.
 ├── apps/
 │   ├── mobile/
 │   │   ├── app/
+│   │   │   ├── _layout.tsx
 │   │   │   └── index.tsx
+│   │   ├── src/
+│   │   │   └── design-tokens.ts
 │   │   ├── app.json
+│   │   ├── expo-env.d.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   └── api/
@@ -116,10 +120,13 @@ M0에서는 다음 최소 구조만 만든다.
 │       └── README.md
 ├── .env.example
 ├── .gitignore
+├── DESIGN.md
 ├── eslint.config.mjs
 ├── package.json
+├── pnpm-lock.yaml
 ├── pnpm-workspace.yaml
 ├── prettier.config.cjs
+├── tsconfig.json
 ├── tsconfig.base.json
 └── vitest.config.ts
 ```
@@ -176,8 +183,8 @@ MAX_UPLOAD_MB=10
 IMAGE_STORAGE_BUCKET=
 ```
 
-   - 실제 `.env`는 커밋하지 않는다고 README와 `.gitignore`에 반영한다.
-   - M0에서는 OpenAI SDK를 설치하거나 호출하지 않는다.
+- 실제 `.env`는 커밋하지 않는다고 README와 `.gitignore`에 반영한다.
+- M0에서는 OpenAI SDK를 설치하거나 호출하지 않는다.
 
 7. CI 설정
    - `.github/workflows/ci.yml`을 만든다.
@@ -185,10 +192,11 @@ IMAGE_STORAGE_BUCKET=
    - `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm typecheck`, `pnpm test`를 실행한다.
    - `pnpm eval`은 M0에서는 로컬 명령으로만 유지한다. AI 실호출 평가가 생기기 전까지 CI 필수 단계에 넣지 않는다.
 
-8. README 갱신
+8. README와 디자인 기반 갱신
    - 설치, 실행, 검증 명령을 실제 스크립트와 일치시킨다.
    - M0는 기능 앱이 아니라 개발 기반이라고 명시한다.
    - 다음 단계는 `docs/08_CODEX_START_PROMPTS.md`의 Prompt 2 실행 후 M1 mock 수직 흐름이라고 적는다.
+   - `DESIGN.md`에는 M0 개발 화면에 필요한 최소 색상, 간격, 타입 토큰과 향후 UI 원칙을 둔다.
 
 ## 6. Data and API contract
 
@@ -198,10 +206,10 @@ M0에서 새로 정의하는 계약은 health check뿐이다.
 
 ```ts
 type HealthResponse = {
-  status: "ok";
-  service: "parent-coach-api";
-  schemaVersion: "1.0";
-};
+  status: "ok"
+  service: "parent-coach-api"
+  schemaVersion: "1.0"
+}
 ```
 
 예상 JSON:
@@ -289,23 +297,27 @@ pnpm eval
 
 ### M0 구현 완료 조건
 
-- [ ] `pnpm install`이 성공한다.
-- [ ] `pnpm dev`로 빈 모바일 개발 서버와 API health 서버를 실행할 수 있다.
-- [ ] `GET /health`가 공유 계약에 맞는 응답을 반환한다.
-- [ ] `pnpm lint`가 성공한다.
-- [ ] `pnpm typecheck`가 성공한다.
-- [ ] `pnpm test`가 성공한다.
-- [ ] `pnpm eval`이 M0 기준으로 성공한다.
-- [ ] CI에서 install, lint, typecheck, test가 실행된다.
-- [ ] README의 설치와 실행 방법이 실제 명령과 일치한다.
-- [ ] 클라이언트 번들에 OpenAI/API 비밀키가 없다.
-- [ ] M1 기능 화면, 촬영/업로드, 실제 AI 호출, 데이터베이스가 포함되지 않았다.
+- [x] `pnpm install`이 성공한다.
+- [x] `pnpm dev`로 빈 모바일 개발 서버와 API health 서버를 실행할 수 있다.
+- [x] `GET /health`가 공유 계약에 맞는 응답을 반환한다.
+- [x] `pnpm lint`가 성공한다.
+- [x] `pnpm typecheck`가 성공한다.
+- [x] `pnpm test`가 성공한다.
+- [x] `pnpm eval`이 M0 기준으로 성공한다.
+- [x] CI에서 install, lint, typecheck, test가 실행된다.
+- [x] README의 설치와 실행 방법이 실제 명령과 일치한다.
+- [x] 클라이언트 번들에 OpenAI/API 비밀키가 없다.
+- [x] M1 기능 화면, 촬영/업로드, 실제 AI 호출, 데이터베이스가 포함되지 않았다.
 
 ## 10. Progress log
 
 - 2026-06-19: Prompt 1 실행. 기존 제품/기술/평가 문서를 읽고 M0 전용 저장소 스캐폴딩 계획을 작성했다.
 - 2026-06-19: `docs/04_TECHNICAL_DIRECTION.md`의 권장 구조 중 M0에 과도한 `ai`, `math-validation`, `curriculum`, `ui` 패키지는 제외하기로 했다.
 - 2026-06-19: API 서버는 Hono로 계획했다. 충돌이 발견되면 결정 로그 초안을 추가하고 사용자 승인을 받는다.
+- 2026-06-19: Prompt 2 실행. `apps/mobile`, `apps/api`, `packages/contracts`, `evals`, 루트 TypeScript/ESLint/Prettier/Vitest/pnpm/CI 기반을 만들었다.
+- 2026-06-19: Expo SDK 56 호환성 확인 결과 React 19.2.3, React Native 0.85.3, Reanimated 4.3.1, Worklets 0.8.3 조합으로 고정했다.
+- 2026-06-19: `pnpm install`, `pnpm peers check`, `expo install --check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm eval`을 통과했다.
+- 2026-06-19: `pnpm dev`를 승인된 외부 실행으로 띄워 API `http://localhost:3001`과 Expo Metro `http://localhost:8081` 기동을 확인했고, `GET /health`가 공유 계약 JSON을 반환함을 확인했다.
 
 ## 11. Product invariant review
 
@@ -322,4 +334,24 @@ pnpm eval
 
 ## 12. Result
 
-아직 구현하지 않았다. 이 계획이 승인되면 다음 단계는 `docs/08_CODEX_START_PROMPTS.md`의 Prompt 2를 실행해 M0 저장소 기반을 실제로 만든다.
+M0 저장소 스캐폴딩을 구현했다.
+
+- 루트 workspace: `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `tsconfig.base.json`, `tsconfig.json`, `eslint.config.mjs`, `prettier.config.cjs`, `vitest.config.ts`
+- 앱: Expo Router 기반 `apps/mobile`, Hono 기반 `apps/api`
+- 공유 계약: `packages/contracts`의 health schema/type/factory
+- 평가 자리: `evals/fixtures`, `evals/runners`
+- 보안 기준: `.env.example`만 추적하고 실제 `.env*`는 `.gitignore`로 제외
+- CI: GitHub Actions에서 install, lint, typecheck, test 실행
+- 문서: README 실행 안내와 M0용 `DESIGN.md` 추가
+
+검증 결과:
+
+- `pnpm install`: 성공
+- `pnpm peers check`: 성공, peer dependency issue 없음
+- `pnpm --filter @parent-coach/mobile exec expo install --check`: 성공, Expo 의존성 최신
+- `pnpm lint`: 성공
+- `pnpm typecheck`: 성공
+- `pnpm test`: 성공, 2개 test file / 5개 test
+- `pnpm eval`: 성공, M0 placeholder 안내 출력
+- `pnpm dev`: 승인된 외부 실행에서 API와 Expo Metro 기동 확인
+- `curl http://localhost:3001/health`: `{"status":"ok","service":"parent-coach-api","schemaVersion":"1.0"}` 반환

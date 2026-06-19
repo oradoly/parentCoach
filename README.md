@@ -1,36 +1,82 @@
-# 부모 코칭 앱 — Codex 개발 문서 패키지
+# Parent Coach
 
-이 저장소 문서들은 **초등학교 5~6학년 자녀의 수학 질문을 부모가 잘 코칭하도록 돕는 앱**의 MVP를 만들기 위한 기준입니다.
+초등학교 5~6학년 자녀의 수학 질문을 부모가 코칭하도록 돕는 모바일 앱입니다. 이 저장소는 제품 문서를 기준으로 MVP를 구현하기 위한 Expo 모바일 앱, TypeScript API, 공유 계약 패키지를 담습니다.
 
-## 문서의 역할
+M0 현재 상태는 기능 앱이 아니라 개발 기반입니다. 촬영, 업로드, 문제 인식, 코칭 생성, 실제 AI 호출은 아직 포함하지 않습니다.
 
-- `AGENTS.md`: Codex가 매 작업 전에 따라야 하는 짧고 강한 규칙입니다.
-- `docs/00_PRODUCT_CHARTER.md`: 제품의 목적, 사용자, 핵심 가치, 절대 바꾸지 않을 방향입니다. 흔히 말하는 `goal` 문서에 해당합니다.
-- `docs/01_MVP_PRD.md`: MVP 기능 요구사항과 범위입니다.
-- `docs/02_UX_AND_CONTENT.md`: 화면 흐름, 힌트 단계, 부모용 문구 원칙입니다.
-- `docs/03_AI_BEHAVIOR_SPEC.md`: 이미지 인식과 코칭 결과의 AI 계약, JSON 구조, 교육 원칙입니다.
-- `docs/04_TECHNICAL_DIRECTION.md`: 권장 기술 구조와 보안·검증 원칙입니다.
-- `docs/05_ACCEPTANCE_AND_EVALS.md`: 출시 전에 통과해야 할 수용 기준과 평가 방식입니다.
-- `docs/06_MVP_BACKLOG.md`: Codex가 순서대로 구현할 작업 목록입니다.
-- `docs/07_DECISIONS.md`: 제품과 기술의 확정 결정을 기록합니다.
-- `docs/08_CODEX_START_PROMPTS.md`: Codex에 바로 붙여 넣을 수 있는 시작 프롬프트입니다.
-- `docs/09_REFERENCES.md`: 문서 작성의 기준이 된 공식 자료입니다.
-- `PLANS.md`: 복잡한 작업을 시작하기 전에 Codex가 작성·갱신할 실행 계획 양식입니다.
+## 문서
 
-## 가장 먼저 할 일
+- `AGENTS.md`: Codex 작업 규칙과 제품 불변조건
+- `PLANS.md`: 현재 작업 계획과 진행 기록
+- `docs/00_PRODUCT_CHARTER.md`: 제품 목적과 성공 기준
+- `docs/01_MVP_PRD.md`: MVP 기능 요구사항
+- `docs/02_UX_AND_CONTENT.md`: 부모용 UX와 문구 원칙
+- `docs/03_AI_BEHAVIOR_SPEC.md`: AI 출력 계약과 안전 원칙
+- `docs/04_TECHNICAL_DIRECTION.md`: 기술 방향과 보안 기준
+- `docs/05_ACCEPTANCE_AND_EVALS.md`: 수용 기준과 평가 방식
+- `docs/06_MVP_BACKLOG.md`: 마일스톤 백로그
+- `docs/07_DECISIONS.md`: 확정된 제품/기술 결정
+- `docs/08_CODEX_START_PROMPTS.md`: 단계별 Codex 시작 프롬프트
+- `docs/09_REFERENCES.md`: 참고 자료
 
-1. 이 폴더 전체를 새 Git 저장소의 루트에 복사합니다.
-2. Codex를 저장소 루트에서 시작합니다.
-3. 아래 프롬프트로 첫 작업을 요청합니다.
+## 구조
 
 ```text
-AGENTS.md와 docs/ 문서를 먼저 읽고, 제품 방향을 요약해 주세요.
-아직 기능 코드를 작성하지 말고 docs/06_MVP_BACKLOG.md의 M0 저장소 스캐폴딩에 대한 실행 계획을 PLANS.md에 작성해 주세요.
-계획에는 기술 선택, 폴더 구조, 실행 명령, 테스트 전략, 위험 요소, 완료 조건을 포함해 주세요.
-제품 불변조건과 충돌하는 제안은 제외해 주세요.
+apps/
+  api/        Hono 기반 TypeScript API
+  mobile/     Expo React Native 앱
+packages/
+  contracts/  런타임 검증 가능한 공유 API 계약
+evals/
+  fixtures/   M3 이후 평가 fixture 위치
+  runners/    M3 이후 평가 runner 위치
 ```
 
-계획을 검토한 뒤에는 `docs/08_CODEX_START_PROMPTS.md`의 순서로 진행합니다.
+M0는 `packages/ai`, `packages/math-validation`, `packages/curriculum`, `packages/ui`를 만들지 않습니다. 실제 필요가 생기는 마일스톤에서 추가합니다.
+
+## 준비
+
+Node.js 24 이상과 `pnpm` 11.8.0을 사용합니다.
+
+```bash
+corepack prepare pnpm@11.8.0 --activate
+pnpm install
+```
+
+비밀값은 서버 환경에만 둡니다. 실제 `.env`는 커밋하지 않고, 필요한 키 이름만 `.env.example`에 남깁니다. 모바일 앱에 `OPENAI_API_KEY`나 서버 비밀을 넣지 않습니다.
+
+## 실행
+
+```bash
+pnpm dev
+```
+
+`pnpm dev`는 API와 Expo 모바일 개발 서버를 함께 시작합니다. API 기본 포트는 `3001`입니다.
+
+```bash
+curl http://localhost:3001/health
+```
+
+예상 응답:
+
+```json
+{
+  "status": "ok",
+  "service": "parent-coach-api",
+  "schemaVersion": "1.0"
+}
+```
+
+## 검증
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm eval
+```
+
+`pnpm eval`은 M0에서는 평가 fixture와 runner가 아직 자리만 잡혀 있음을 안내하고 성공합니다. 실제 AI 평가 runner는 M3 이후 추가합니다.
 
 ## 문서 우선순위
 
@@ -45,8 +91,4 @@ AGENTS.md와 docs/ 문서를 먼저 읽고, 제품 방향을 요약해 주세요
 7. `docs/04_TECHNICAL_DIRECTION.md`
 8. 현재 작업의 `PLANS.md`
 
-단, 사용자가 명시적으로 방향 변경을 승인하면 관련 문서를 먼저 수정하고 코드에 반영합니다.
-
-## MVP 한 문장
-
-> 아이가 초등학교 5~6학년 수학 문제에 도움을 청했을 때, 부모가 문제를 촬영하여 빠르게 이해하고, 역질문과 단계별 힌트로 아이가 스스로 풀도록 돕는 부모 전용 AI 코칭 앱.
+사용자가 명시적으로 방향 변경을 승인하면 관련 문서를 먼저 수정하고 코드에 반영합니다.

@@ -1,0 +1,28 @@
+{
+  "name": "parent-coach",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.8.0",
+  "scripts": {
+    "dev": "pnpm --parallel --stream --filter @parent-coach/api --filter @parent-coach/mobile dev",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "vitest run",
+    "eval": "node -e \"console.log('M0 eval: fixtures and runners are placeholders; M3 will add executable AI evals.')\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.13.2",
+    "@types/react": "19.2.17",
+    "eslint": "10.5.0",
+    "globals": "17.6.0",
+    "prettier": "3.8.4",
+    "tsx": "4.22.4",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.61.1",
+    "vitest": "4.1.9"
+  }
+}
