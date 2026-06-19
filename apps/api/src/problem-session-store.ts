@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto"
 import {
   PROBLEM_SESSION_TTL_MS,
   type AcceptedImageMimeType,
+  type ConfirmedProblemResponse,
+  type ConfirmProblemRequest,
   type ImageUploadResponse,
   type ProblemImageId,
   type ProblemImageSource,
@@ -22,6 +24,7 @@ type StoredProblemSession = Readonly<{
   expiresAt: Date
   imageStatus: "empty" | "uploaded"
   image?: UploadedProblemImage
+  confirmedProblem?: ConfirmedProblemResponse
 }>
 
 type UploadedProblemImage = Readonly<{
@@ -32,6 +35,15 @@ type UploadedProblemImage = Readonly<{
   width: number
   height: number
   source: ProblemImageSource
+  dataUrl: string
+}>
+
+export type UploadedProblemImageForRecognition = Readonly<{
+  mimeType: AcceptedImageMimeType
+  byteSize: number
+  width: number
+  height: number
+  dataUrl: string
 }>
 
 type SessionLookup =
@@ -46,12 +58,18 @@ export type ProblemImageUploadInput = Readonly<{
   width: number
   height: number
   source: ProblemImageSource
+  dataUrl: string
 }>
 
 export type ProblemSessionStore = Readonly<{
   create: () => TemporaryProblemSessionResponse
   getActive: (sessionId: ProblemSessionId) => SessionLookup
+  getUploadedImage: (sessionId: ProblemSessionId) => UploadedProblemImageForRecognition | null
   recordUpload: (input: ProblemImageUploadInput) => ImageUploadResponse
+  confirmProblem: (
+    sessionId: ProblemSessionId,
+    input: ConfirmProblemRequest,
+  ) => ConfirmedProblemResponse
   delete: (sessionId: ProblemSessionId) => ProblemSessionDeletedResponse
 }>
 
@@ -101,6 +119,27 @@ export const createProblemSessionStore = (
         imageStatus: "empty",
       }
     },
+    confirmProblem: (sessionId, input) => {
+      const confirmedProblem: ConfirmedProblemResponse = {
+        schemaVersion: "1.0",
+        sessionId,
+        problemText: input.problemText,
+        ...(input.normalizedText === undefined ? {} : { normalizedText: input.normalizedText }),
+        ...(input.latex === undefined ? {} : { latex: input.latex }),
+        sourceRecognitionStatus: input.recognitionStatus,
+        userEdited: input.userEdited,
+        confirmedAt: toIsoString(config.now()),
+      }
+      const lookup = getActive(sessionId)
+      if (lookup.kind === "found") {
+        sessions.set(sessionId, {
+          ...lookup.session,
+          confirmedProblem,
+        })
+      }
+
+      return confirmedProblem
+    },
     delete: (sessionId) => {
       sessions.delete(sessionId)
       return {
@@ -111,6 +150,19 @@ export const createProblemSessionStore = (
       }
     },
     getActive,
+    getUploadedImage: (sessionId) => {
+      const lookup = getActive(sessionId)
+      if (lookup.kind !== "found" || lookup.session.image === undefined) {
+        return null
+      }
+      return {
+        mimeType: lookup.session.image.mimeType,
+        byteSize: lookup.session.image.byteSize,
+        width: lookup.session.image.width,
+        height: lookup.session.image.height,
+        dataUrl: lookup.session.image.dataUrl,
+      }
+    },
     recordUpload: (input) => {
       const uploadedImage: UploadedProblemImage = {
         imageId: config.imageIdFactory(),
@@ -120,6 +172,7 @@ export const createProblemSessionStore = (
         width: input.width,
         height: input.height,
         source: input.source,
+        dataUrl: input.dataUrl,
       }
       const session = sessions.get(input.sessionId)
       const updatedSession: StoredProblemSession = {

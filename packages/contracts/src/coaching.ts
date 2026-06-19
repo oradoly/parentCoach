@@ -2,34 +2,6 @@ import { z } from "zod"
 
 const schemaVersionSchema = z.literal("1.0")
 
-export const recognitionStatusSchema = z.union([
-  z.literal("ok"),
-  z.literal("uncertain"),
-  z.literal("needs_crop"),
-  z.literal("needs_retake"),
-  z.literal("missing_diagram"),
-  z.literal("unsupported"),
-])
-
-export const recognitionAmbiguitySchema = z.object({
-  segment: z.string().min(1),
-  reason: z.string().min(1),
-  options: z.array(z.string().min(1)),
-})
-
-export const recognitionResponseSchema = z.object({
-  schemaVersion: schemaVersionSchema,
-  status: recognitionStatusSchema,
-  problemText: z.string().min(1),
-  normalizedText: z.string().min(1),
-  latex: z.string().optional(),
-  confidence: z.number().min(0).max(1),
-  containsMultipleProblems: z.boolean(),
-  requiresDiagram: z.boolean(),
-  ambiguities: z.array(recognitionAmbiguitySchema),
-  suggestedAction: z.string().min(1),
-})
-
 const classificationSchema = z.object({
   curriculum: z.string().min(1),
   gradeBand: z.literal("5-6"),
@@ -106,6 +78,5 @@ export const coachingResponseSchema = z.object({
   warnings: z.array(z.string()),
 })
 
-export type RecognitionResponse = Readonly<z.infer<typeof recognitionResponseSchema>>
 export type CoachingHint = Readonly<z.infer<typeof coachingHintSchema>>
 export type CoachingResponse = Readonly<z.infer<typeof coachingResponseSchema>>

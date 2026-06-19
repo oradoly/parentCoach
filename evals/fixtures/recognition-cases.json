@@ -1,0 +1,88 @@
+[
+  {
+    "name": "clear single grade 5-6 arithmetic problem",
+    "expectedStatus": "ok",
+    "response": {
+      "schemaVersion": "1.0",
+      "status": "ok",
+      "problemText": "3/4L의 주스를 한 컵에 1/8L씩 담으려고 합니다. 모두 몇 컵에 담을 수 있나요?",
+      "normalizedText": "3/4L ÷ 1/8L 컵 수 구하기",
+      "latex": "\\frac{3}{4} \\div \\frac{1}{8}",
+      "confidence": 0.94,
+      "containsMultipleProblems": false,
+      "requiresDiagram": false,
+      "ambiguities": [],
+      "suggestedAction": "confirm"
+    }
+  },
+  {
+    "name": "specific ambiguous fraction segment",
+    "expectedStatus": "uncertain",
+    "response": {
+      "schemaVersion": "1.0",
+      "status": "uncertain",
+      "problemText": "1/8L인지 1/6L인지 흐린 분수 조건이 있는 문제입니다.",
+      "normalizedText": "흐린 분수 조건 확인 필요",
+      "latex": "",
+      "confidence": 0.52,
+      "containsMultipleProblems": false,
+      "requiresDiagram": false,
+      "ambiguities": [
+        {
+          "segment": "1/8L",
+          "reason": "분모가 흐리게 보여요.",
+          "options": ["1/8L", "1/6L"]
+        }
+      ],
+      "suggestedAction": "parent_edit"
+    }
+  },
+  {
+    "name": "required diagram missing",
+    "expectedStatus": "missing_diagram",
+    "response": {
+      "schemaVersion": "1.0",
+      "status": "missing_diagram",
+      "problemText": "오른쪽 그림을 보고 넓이를 구하시오.",
+      "normalizedText": "그림 조건 누락",
+      "latex": "",
+      "confidence": 0.61,
+      "containsMultipleProblems": false,
+      "requiresDiagram": true,
+      "ambiguities": [],
+      "suggestedAction": "retake_with_diagram"
+    }
+  },
+  {
+    "name": "multiple problems visible",
+    "expectedStatus": "needs_crop",
+    "response": {
+      "schemaVersion": "1.0",
+      "status": "needs_crop",
+      "problemText": "두 개 이상의 문제가 함께 보입니다.",
+      "normalizedText": "한 문제만 다시 자르기",
+      "latex": "",
+      "confidence": 0.73,
+      "containsMultipleProblems": true,
+      "requiresDiagram": false,
+      "ambiguities": [],
+      "suggestedAction": "crop_single_problem"
+    }
+  },
+  {
+    "name": "outside MVP subject range",
+    "expectedStatus": "unsupported",
+    "response": {
+      "schemaVersion": "1.0",
+      "status": "unsupported",
+      "problemText": "고등학교 미적분 극한 문제입니다.",
+      "normalizedText": "지원 범위 외 문제",
+      "latex": "",
+      "confidence": 0.88,
+      "containsMultipleProblems": false,
+      "requiresDiagram": false,
+      "ambiguities": [],
+      "suggestedAction": "choose_grade_5_6_math"
+    }
+  }
+]

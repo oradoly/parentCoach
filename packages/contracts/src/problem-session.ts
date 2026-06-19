@@ -56,9 +56,14 @@ export const problemSessionErrorCodeSchema = z.union([
   z.literal("SESSION_NOT_FOUND"),
   z.literal("SESSION_EXPIRED"),
   z.literal("IMAGE_REQUIRED"),
+  z.literal("IMAGE_NOT_UPLOADED"),
   z.literal("UNSUPPORTED_IMAGE_TYPE"),
   z.literal("IMAGE_TOO_LARGE"),
   z.literal("IMAGE_DIMENSIONS_REQUIRED"),
+  z.literal("OPENAI_NOT_CONFIGURED"),
+  z.literal("RECOGNITION_FAILED"),
+  z.literal("RECOGNITION_SCHEMA_INVALID"),
+  z.literal("PROBLEM_TEXT_REQUIRED"),
 ])
 
 export const problemSessionErrorResponseSchema = z.object({

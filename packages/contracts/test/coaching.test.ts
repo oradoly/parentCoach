@@ -7,6 +7,7 @@ const recognitionFixture = {
   status: "ok",
   problemText: "3/4L의 주스를 한 컵에 1/8L씩 담으려고 합니다. 모두 몇 컵에 담을 수 있나요?",
   normalizedText: "3/4L ÷ 1/8L 컵 수 구하기",
+  latex: "",
   confidence: 0.94,
   containsMultipleProblems: false,
   requiresDiagram: false,

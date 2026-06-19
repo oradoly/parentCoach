@@ -1,11 +1,5 @@
-export {
-  coachingHintSchema,
-  coachingResponseSchema,
-  recognitionAmbiguitySchema,
-  recognitionResponseSchema,
-  recognitionStatusSchema,
-} from "./coaching"
-export type { CoachingHint, CoachingResponse, RecognitionResponse } from "./coaching"
+export { coachingHintSchema, coachingResponseSchema } from "./coaching"
+export type { CoachingHint, CoachingResponse } from "./coaching"
 export {
   createHealthResponse,
   HEALTH_SCHEMA_VERSION,
@@ -42,3 +36,17 @@ export type {
   TemporaryProblemSessionResponse,
   UploadedImageMetadata,
 } from "./problem-session"
+export {
+  confirmedProblemResponseSchema,
+  confirmProblemRequestSchema,
+  recognitionAmbiguitySchema,
+  recognitionResponseSchema,
+  recognitionStatusSchema,
+} from "./recognition"
+export type {
+  ConfirmedProblemResponse,
+  ConfirmProblemRequest,
+  RecognitionAmbiguity,
+  RecognitionResponse,
+  RecognitionStatus,
+} from "./recognition"

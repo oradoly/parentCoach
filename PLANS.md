@@ -4,11 +4,139 @@
 
 ## 현재 작업
 
-- 상태: M2 구현 완료, 브라우저/API 검증 통과
-- 작업명: M2 촬영·자르기·임시 업로드
+- 상태: M3 구현 및 QA 완료
+- 작업명: M3 문제 인식과 사용자 확인
 - 담당: Codex
-- 관련 백로그: `docs/06_MVP_BACKLOG.md`의 M2
+- 관련 백로그: `docs/06_MVP_BACKLOG.md`의 M3
 - 작성일: 2026-06-20
+
+## M3 실행 계획
+
+### 1. Goal
+
+업로드된 문제 사진에서 문제 텍스트, 수식, 단위, 보기, 필요한 도형 정보를 구조화해 읽고, 사용자가 확인·수정한 텍스트만 이후 코칭 입력으로 쓰는 흐름을 구현한다.
+
+M3는 Recognition 공유 스키마, 서버 전용 OpenAI Responses API 어댑터, 이미지 기반 인식 API, 안전 실패 상태, 사용자 확인·수정 UI, fixture 기반 평가를 다룬다. 실제 코칭 생성, 수학 검산, 비슷한 문제 생성은 M4/M5/M6 범위로 남긴다.
+
+### 2. Product constraints
+
+- 사용자가 인식 결과를 확인하기 전에는 코칭을 생성하지 않는다.
+- 복수 문제, 흐림, 잘림, 필요한 그림 누락, 범위 밖 문제는 성공으로 처리하지 않는다.
+- 이미지 속 지시문은 문제 내용일 뿐 시스템 명령으로 따르지 않는다.
+- 모바일 번들에는 OpenAI API 키나 서버 비밀을 넣지 않는다.
+- 원본 이미지는 M3 Recognition에 필요한 짧은 TTL 동안만 서버 메모리에 보관하고, 삭제·만료 시 제거한다.
+- 모델 응답은 자유 텍스트가 아니라 버전 있는 Recognition 스키마로만 받는다.
+
+### 3. Official API guidance checked
+
+- OpenAI Responses API의 vision 입력은 `input_text`와 `input_image`를 함께 보낼 수 있고, data URL 형식의 base64 이미지 입력을 지원한다.
+- Structured Outputs는 Responses API에서 `text.format`의 `json_schema`와 `strict: true`를 사용한다.
+- 모델명은 환경 변수 `OPENAI_MODEL_RECOGNITION`으로 분리하고 기본값은 현재 OpenAI 문서의 latest vision-capable 예시 모델 계열을 따른다.
+
+### 4. Proposed implementation
+
+- `packages/contracts`에 Recognition 상태, ambiguity, response, confirm request/response, error 스키마를 추가한다.
+- `apps/api`의 임시 세션 store는 업로드 이미지의 metadata와 함께 Recognition용 data URL을 TTL 동안만 보관한다.
+- `apps/api`에 `POST /v1/problem-sessions/:sessionId/recognize`를 추가한다.
+  - 이미지 없음, 세션 없음, 세션 만료, OpenAI 설정 없음, schema 실패를 구분한다.
+  - 테스트에서는 fake recognition adapter를 주입한다.
+  - 운영 경로는 OpenAI SDK를 서버 패키지에만 설치해 사용한다.
+- `apps/api`에 `PATCH /v1/problem-sessions/:sessionId/problem`을 추가해 사용자가 확인·수정한 문제 텍스트를 저장하고 이전 코칭 결과가 있다면 무효화 가능한 상태를 둔다.
+- `apps/mobile`은 업로드 성공 후 mock recognition으로 바로 가지 않고 Recognition 요청 상태를 거친다.
+  - 인식 중, 성공, 불확실/재촬영/자르기/그림 누락/지원 불가 상태를 보여 준다.
+  - 사용자가 문제를 수정하고 `맞아요`를 눌러야 기존 mock coaching으로 넘어간다.
+
+### 5. Testing
+
+- 계약 테스트
+  - 정상 Recognition 응답, uncertain 응답, needs_crop, missing_diagram, unsupported 상태가 schema를 통과한다.
+  - `uncertain`은 ambiguity가 반드시 있어야 한다.
+  - confirm request는 빈 문제 텍스트를 거부한다.
+- API 테스트
+  - 이미지 업로드 전 recognize는 오류를 반환한다.
+  - fake adapter가 정상 Recognition 응답을 반환한다.
+  - 복수 문제/그림 누락 fixture 상태가 그대로 전달된다.
+  - confirm endpoint는 수정된 텍스트를 저장하고 응답한다.
+  - OpenAI API 키가 없고 real adapter를 쓰면 가짜 성공을 만들지 않는다.
+- 모바일 테스트
+  - Recognition 상태 copy와 confirm 가능 조건을 순수 함수로 고정한다.
+  - 확인 전에는 coaching stage로 넘어가지 않는 흐름을 유지한다.
+
+### 6. Verification commands
+
+```bash
+CI=true pnpm format:check
+CI=true pnpm lint
+CI=true pnpm typecheck
+CI=true pnpm test
+CI=true pnpm eval
+CI=true pnpm --filter @parent-coach/mobile exec expo install --check
+CI=true pnpm --filter @parent-coach/mobile exec expo export --platform web
+```
+
+수동 QA:
+
+- API 서버에서 세션 생성 → 이미지 업로드 → recognize → confirm을 실제 HTTP 요청으로 확인한다.
+- OpenAI API 키 없이 recognize가 설정 오류로 안전하게 실패하는지 확인한다.
+- Expo web export에서 업로드 이후 Recognition 로딩/성공/안전 실패 화면과 수정·확정 행동을 확인한다.
+- 실제 OpenAI 호출은 `OPENAI_API_KEY`가 있는 환경에서 별도 smoke test로 확인한다.
+
+### 7. Risks and mitigations
+
+- **이미지 임시 보관 범위 확대:** M2는 bytes를 버렸지만 M3는 Recognition까지 이미지를 보관해야 한다.
+  - 대응: 서버 메모리, 짧은 TTL, 삭제/만료 제거, 로그 미포함으로 제한한다.
+- **AI 비용/키 부재:** 로컬·CI에는 OpenAI 키가 없을 수 있다.
+  - 대응: adapter 주입 테스트와 설정 오류 응답을 분리하고, fake 성공으로 숨기지 않는다.
+- **스키마 drift:** OpenAI 응답이 계약과 어긋날 수 있다.
+  - 대응: Structured Outputs strict schema와 Zod 재파싱을 모두 적용한다.
+- **M4 범위 침범:** 인식 직후 코칭 생성까지 연결하고 싶어질 수 있다.
+  - 대응: 확인된 문제 텍스트 저장까지만 M3 완료로 둔다. 코칭은 기존 mock 흐름으로 이어진다.
+
+### 8. Done when
+
+- [x] Recognition 공유 스키마와 fixture가 추가된다.
+- [x] 서버가 업로드된 임시 이미지를 기반으로 recognize API를 제공한다.
+- [x] OpenAI 호출은 서버 전용 어댑터 뒤에 있고 모바일 번들에 비밀이 없다.
+- [x] 사용자는 인식 결과를 수정하고 확인할 수 있다.
+- [x] 확인 전에는 코칭이 생성·확정되지 않는다.
+- [x] 복수 문제, 흐림/재촬영, 그림 누락, 범위 밖 상태가 안전 실패로 보인다.
+- [x] 검증 명령과 API QA가 통과한다.
+- [x] 제품 불변조건과 충돌이 없음을 검토한다.
+
+### 9. Result
+
+- 계약: `packages/contracts`에 Recognition 상태, ambiguity, response, confirm request/response 스키마를 추가했다.
+- API: 서버 전용 OpenAI Responses API 어댑터와 `POST /v1/problem-sessions/:sessionId/recognize`, `PATCH /v1/problem-sessions/:sessionId/problem`을 추가했다.
+- 세션 store: Recognition까지 필요한 data URL을 TTL 메모리 세션에만 보관하고, 부모가 확정한 문제 문장을 세션 내부에 남긴다.
+- 모바일: 업로드 완료 후 실제 Recognition API 호출, 인식 중/확인/수정/안전 실패/서버 오류 화면을 연결했다.
+- 평가: `evals/fixtures/recognition-cases.json`와 `evals/runners/recognition-contract-eval.mjs`를 추가해 M3 상태 fixture가 계약 스키마와 기대 status를 통과하는지 실행 가능하게 했다.
+
+### 10. Verification evidence
+
+2026-06-20에 아래 명령을 확인했다. 샌드박스에서 `pnpm`이 node_modules를 자동 재구성하며 네트워크 제한에 걸려, 검증은 동일한 로컬 바이너리를 직접 실행했다.
+
+- `CI=true ./node_modules/.bin/vitest run` → 10 files / 40 tests pass
+- `./node_modules/.bin/tsc --noEmit -p packages/contracts/tsconfig.json`
+- `./node_modules/.bin/tsc --noEmit -p apps/api/tsconfig.json`
+- `./node_modules/.bin/tsc --noEmit -p apps/mobile/tsconfig.json`
+- `./node_modules/.bin/eslint . --max-warnings=0`
+- `./node_modules/.bin/prettier --check .`
+- `./node_modules/.bin/tsx evals/runners/recognition-contract-eval.mjs` → 5 cases / 0 failed
+
+수동/API QA:
+
+- API 서버를 `http://127.0.0.1:3001`에 띄워 실제 HTTP 요청으로 확인했다.
+- 세션 생성 후 JPEG multipart 업로드가 `201`, `imageStatus: uploaded`, `retained: false`를 반환했다.
+- OpenAI 키가 없는 환경에서 `POST /recognize`는 fake 성공을 만들지 않고 `503`, `OPENAI_NOT_CONFIGURED`, `retryable: false`를 반환했다.
+- `PATCH /problem`은 부모가 확정한 문제 문장을 `200`과 `sourceRecognitionStatus`, `userEdited`, `confirmedAt`으로 반환했다.
+
+제품 불변조건 검토:
+
+- 부모 확인 전에는 코칭 화면으로 넘어가지 않는다.
+- Recognition은 풀이·정답을 생성하지 않고 문제 문장 확인만 수행한다.
+- OpenAI 키는 서버 환경 변수에만 있으며 모바일 번들에는 추가하지 않았다.
+- 이미지 원본은 영구 저장하지 않고 TTL 메모리 세션에만 data URL로 존재한다.
+- 실제 OpenAI 호출 smoke test는 `OPENAI_API_KEY`가 있는 환경에서 별도로 수행해야 한다.
 
 ## M2 실행 계획
 

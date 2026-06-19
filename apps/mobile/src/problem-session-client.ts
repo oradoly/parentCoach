@@ -1,16 +1,21 @@
 import * as FileSystem from "expo-file-system/legacy"
-import ky from "ky"
+import ky, { HTTPError } from "ky"
 
 import {
+  confirmedProblemResponseSchema,
+  recognitionResponseSchema,
   imageUploadResponseSchema,
   problemSessionDeletedResponseSchema,
   problemSessionErrorResponseSchema,
   temporaryProblemSessionResponseSchema,
+  type ConfirmProblemRequest,
+  type ConfirmedProblemResponse,
   type ImageUploadResponse,
   type ProblemImageSource,
   type ProblemSessionDeletedResponse,
   type ProblemSessionErrorResponse,
   type ProblemSessionId,
+  type RecognitionResponse,
   type TemporaryProblemSessionResponse,
 } from "@parent-coach/contracts"
 
@@ -25,6 +30,11 @@ export type ProblemSessionClient = Readonly<{
     image: PreparedImageCandidate,
     source: ProblemImageSource,
   ) => Promise<ImageUploadResponse>
+  recognizeImage: (sessionId: ProblemSessionId) => Promise<RecognitionResponse>
+  confirmProblem: (
+    sessionId: ProblemSessionId,
+    input: ConfirmProblemRequest,
+  ) => Promise<ConfirmedProblemResponse>
   deleteSession: (sessionId: ProblemSessionId) => Promise<ProblemSessionDeletedResponse>
 }>
 
@@ -37,6 +47,16 @@ const trimTrailingSlashes = (value: string): string => value.replace(/\/+$/, "")
 const parseUploadBody = (body: string): ImageUploadResponse => {
   const parsedBody: unknown = JSON.parse(body)
   return imageUploadResponseSchema.parse(parsedBody)
+}
+
+const readStructuredKyError = async (
+  error: unknown,
+): Promise<ProblemSessionErrorResponse | null> => {
+  if (!(error instanceof HTTPError)) {
+    return null
+  }
+
+  return parseProblemSessionErrorBody(await error.response.text())
 }
 
 export const parseProblemSessionErrorBody = (body: string): ProblemSessionErrorResponse | null => {
@@ -69,6 +89,34 @@ export const createProblemSessionClient = ({
     deleteSession: async (sessionId) => {
       const body: unknown = await api.delete(`v1/problem-sessions/${sessionId}`).json()
       return problemSessionDeletedResponseSchema.parse(body)
+    },
+    recognizeImage: async (sessionId) => {
+      try {
+        const body: unknown = await api.post(`v1/problem-sessions/${sessionId}/recognize`).json()
+        return recognitionResponseSchema.parse(body)
+      } catch (error) {
+        const structuredError = await readStructuredKyError(error)
+        if (structuredError !== null) {
+          throw new ProblemSessionRequestError(structuredError)
+        }
+        throw error
+      }
+    },
+    confirmProblem: async (sessionId, input) => {
+      try {
+        const body: unknown = await api
+          .patch(`v1/problem-sessions/${sessionId}/problem`, {
+            json: input,
+          })
+          .json()
+        return confirmedProblemResponseSchema.parse(body)
+      } catch (error) {
+        const structuredError = await readStructuredKyError(error)
+        if (structuredError !== null) {
+          throw new ProblemSessionRequestError(structuredError)
+        }
+        throw error
+      }
     },
     uploadImage: async (sessionId, image, source) => {
       const uploadResult = await FileSystem.uploadAsync(
@@ -113,5 +161,13 @@ export class ProblemImageUploadStatusError extends Error {
 
   constructor(readonly status: number) {
     super(`image upload failed with status ${status.toString()}`)
+  }
+}
+
+export class ProblemSessionRequestError extends Error {
+  readonly name = "ProblemSessionRequestError"
+
+  constructor(readonly response: ProblemSessionErrorResponse) {
+    super(response.error.message)
   }
 }
