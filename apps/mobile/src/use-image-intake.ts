@@ -1,5 +1,6 @@
 import * as ImageManipulator from "expo-image-manipulator"
 import * as ImagePicker from "expo-image-picker"
+import * as FileSystem from "expo-file-system/legacy"
 import { useState } from "react"
 
 import type { ImageUploadResponse, ProblemImageSource } from "@parent-coach/contracts"
@@ -81,7 +82,9 @@ const createPickedImageCandidate = (asset: ImagePicker.ImagePickerAsset): Picked
 const preparePickedImage = async (
   asset: ImagePicker.ImagePickerAsset,
 ): Promise<ImageIntakeValidation> => {
-  const initialValidation = validateImageForUpload(createPickedImageCandidate(asset))
+  const initialValidation = validateImageForUpload(createPickedImageCandidate(asset), {
+    enforceFileSize: false,
+  })
   if (initialValidation.kind === "invalid") {
     return initialValidation
   }
@@ -99,9 +102,14 @@ const preparePickedImage = async (
   context.release()
   renderedImage.release()
 
+  const fileInfo = await FileSystem.getInfoAsync(manipulated.uri)
+  if (!fileInfo.exists || fileInfo.isDirectory) {
+    return { kind: "invalid", reason: "invalid_size" }
+  }
+
   return validateImageForUpload({
     fileName: "problem-image.jpg",
-    fileSize: initialValidation.candidate.byteSize,
+    fileSize: fileInfo.size,
     height: manipulated.height,
     mimeType: "image/jpeg",
     uri: manipulated.uri,

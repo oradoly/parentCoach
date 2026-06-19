@@ -25,7 +25,7 @@ describe("M2 image intake rules", () => {
     expect(buildImageResizePlan({ width: 1200, height: 900 })).toBeNull()
   })
 
-  it("rejects unsupported or oversized images before upload", () => {
+  it("rejects unsupported or oversized prepared images before upload", () => {
     const unsupported = validateImageForUpload({
       uri: "file:///tmp/problem.gif",
       width: 1000,
@@ -47,6 +47,22 @@ describe("M2 image intake rules", () => {
     expect(createImageIntakeErrorCopy(unsupported)).toContain("JPG, PNG, WebP")
     expect(oversized.kind).toBe("invalid")
     expect(createImageIntakeErrorCopy(oversized)).toContain("5MB")
+  })
+
+  it("allows an oversized original image to be prepared before final size validation", () => {
+    const result = validateImageForUpload(
+      {
+        uri: "file:///tmp/original-phone-photo.jpg",
+        width: 4032,
+        height: 3024,
+        mimeType: "image/jpeg",
+        fileName: "original-phone-photo.jpg",
+        fileSize: MAX_IMAGE_UPLOAD_BYTES + 1,
+      },
+      { enforceFileSize: false },
+    )
+
+    expect(result.kind).toBe("valid")
   })
 
   it("accepts valid image candidates with a source label", () => {

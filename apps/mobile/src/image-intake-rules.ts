@@ -29,6 +29,10 @@ export type ImageResizePlan = Readonly<{
   height: number
 }>
 
+type ImageValidationOptions = Readonly<{
+  enforceFileSize?: boolean
+}>
+
 type MimeInput = Readonly<{
   mimeType?: string | null
   fileName?: string | null
@@ -79,7 +83,11 @@ export const buildImageResizePlan = ({
   }
 }
 
-export const validateImageForUpload = (candidate: PickedImageCandidate): ImageIntakeValidation => {
+export const validateImageForUpload = (
+  candidate: PickedImageCandidate,
+  options: ImageValidationOptions = {},
+): ImageIntakeValidation => {
+  const enforceFileSize = options.enforceFileSize ?? true
   const mimeType = normalizeImageMimeType(candidate)
   if (mimeType === null) {
     return { kind: "invalid", reason: "unsupported_type" }
@@ -91,7 +99,11 @@ export const validateImageForUpload = (candidate: PickedImageCandidate): ImageIn
   if (candidate.width <= 0 || candidate.height <= 0) {
     return { kind: "invalid", reason: "invalid_size" }
   }
-  if (candidate.fileSize !== undefined && candidate.fileSize > MAX_IMAGE_UPLOAD_BYTES) {
+  if (
+    enforceFileSize &&
+    candidate.fileSize !== undefined &&
+    candidate.fileSize > MAX_IMAGE_UPLOAD_BYTES
+  ) {
     return { kind: "invalid", reason: "too_large" }
   }
 

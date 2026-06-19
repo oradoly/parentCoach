@@ -142,6 +142,22 @@ CI=true pnpm --filter @parent-coach/mobile exec expo export --platform web
 - 충돌 없음: 서버는 M2에서 원본 image bytes를 영구 저장하지 않고 metadata만 임시 세션에 기록한다.
 - 충돌 없음: AI 인식, OCR, 장기 저장, 계정, 코칭 생성은 M3 이후로 남겼다.
 
+### 11. QA follow-up
+
+2026-06-20 M2 QA에서 아래 두 가지를 수정했다.
+
+- 실제 휴대폰 원본 사진은 5MB를 넘을 수 있으므로, 전처리 전에는 MIME과 이미지 크기만 확인하고 리사이즈 저장 후 실제 파일 size를 읽어 최종 5MB 제한을 적용하도록 바꿨다.
+- 375px 모바일 폭에서 CJK 제목 줄바꿈이 어색한 문구를 짧게 다듬었다.
+
+재검증:
+
+- `CI=true pnpm format:check`
+- `CI=true pnpm lint`
+- `CI=true pnpm typecheck`
+- `CI=true pnpm test` → 7 files / 29 tests pass
+- `CI=true pnpm --filter @parent-coach/mobile exec expo export --platform web`
+- Browser snapshot에서 375px, 768px, 1280px 홈 → intake 진입과 수정 문구 노출을 확인했다.
+
 ## M1 실행 계획
 
 ### 1. Goal

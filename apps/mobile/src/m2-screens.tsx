@@ -27,7 +27,7 @@ export function ImageIntakeScreen({
     <View style={styles.stack}>
       <View style={styles.hero}>
         <Pill>사진은 임시 세션으로만 처리해요</Pill>
-        <Text style={styles.title}>문제 하나만 선명하게 담아 주세요</Text>
+        <Text style={styles.title}>문제 하나만 선명하게 담기</Text>
         <Text style={styles.subtitle}>
           이름, 학교, 얼굴은 가능하면 빼고, 그림이나 표가 문제 조건이면 함께 넣어 주세요.
         </Text>
@@ -70,7 +70,7 @@ function StateCard({ state, onContinue, onReset, onUpload }: StateCardProps) {
   switch (state.kind) {
     case "idle":
       return (
-        <Card eyebrow="준비" title="사진을 선택하면 업로드 전에 한 번 더 보여 드릴게요">
+        <Card eyebrow="준비" title="업로드 전에 사진을 확인해요">
           <BodyText>촬영하거나 보관함에서 문제 사진을 골라 주세요.</BodyText>
         </Card>
       )
