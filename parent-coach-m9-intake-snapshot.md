@@ -1,0 +1,14 @@
+- generic [ref=e20] [box=24,32,342,667]:
+  - generic [ref=e21] [box=24,32,342,110]:
+    - generic [ref=e22] [box=24,48,342,38]: 문제 하나
+    - generic [ref=e23] [box=24,102,342,24]: 이름·학교·얼굴은 빼고 찍어 주세요.
+  - generic [ref=e24] [box=24,166,342,349]:
+    - generic [ref=e25] [box=41,183,308,27]: 촬영 영역
+    - generic [ref=e28] [box=135,346,119,24]: 문제를 여기에 담기
+  - generic [ref=e29] [box=24,539,342,160]:
+    - button "카메라" [ref=e30] [cursor=pointer] [box=24,539,342,48]:
+      - generic [ref=e31] [box=174,551,42,24]: 카메라
+    - button "사진" [ref=e32] [cursor=pointer] [box=24,595,342,48]:
+      - generic [ref=e33] [box=181,607,28,24]: 사진
+    - button "뒤로" [ref=e34] [cursor=pointer] [box=24,651,342,48]:
+      - generic [ref=e35] [box=181,663,28,24]: 뒤로

@@ -1,29 +1,57 @@
-import { StyleSheet, Text, TextInput, View } from "react-native"
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native"
 
 import { colors, radius, spacing, typography } from "./design-tokens"
-import type { CoachingVisibility } from "./flow-rules"
-import { ActionButton, BodyText, Card, HelperText, KeyValueRow, Pill } from "./m1-components"
-import { mockCoachingResponse, mockErrorState } from "./mock-parent-coach"
+import { ActionButton, BodyText, Card, HelperText, KeyValueRow } from "./m1-components"
+import { mockErrorState } from "./mock-parent-coach"
 
 type HomeScreenProps = Readonly<{
   onStart: () => void
-  onShowError: () => void
 }>
 
-export function HomeScreen({ onStart, onShowError }: HomeScreenProps) {
+export function HomeScreen({ onStart }: HomeScreenProps) {
   return (
     <View style={styles.stack}>
-      <View style={styles.hero}>
-        <Pill>초등 5~6학년 수학 · 한 번에 한 문제</Pill>
-        <Text style={styles.title}>아이에게 어떻게 설명할지 같이 준비해 볼까요?</Text>
-        <Text style={styles.subtitle}>
-          문제를 확인한 뒤, 부모님이 바로 말할 질문과 힌트를 차례로 보여 드립니다.
+      <View style={styles.homeHero}>
+        <View style={styles.homePill}>
+          <Text style={styles.homePillText}>초등 5-6 수학</Text>
+        </View>
+        <Text style={styles.homeTitle}>
+          아이에게 어떻게{"\n"}물어볼지 먼저 준비해요
+        </Text>
+        <Text style={styles.homeSubtitle}>
+          한 문제만 찍으면 질문과 힌트를{"\n"}정답보다 먼저 정리해 드려요.
         </Text>
       </View>
+      <Pressable
+        accessibilityHint="카메라 또는 사진 선택 화면으로 이동합니다."
+        accessibilityLabel="문제 하나 촬영하기"
+        accessibilityRole="button"
+        onPress={onStart}
+        style={({ pressed }) => [
+          styles.captureArea,
+          pressed ? styles.captureAreaPressed : undefined,
+        ]}
+      >
+        <CameraGlyph />
+        <Text style={styles.captureTitle}>
+          문제 하나를 화면 안에{"\n"}맞춰 주세요.
+        </Text>
+        <Text style={styles.captureHint}>그림이나 표도 함께 넣어 주세요.</Text>
+      </Pressable>
       <View style={styles.actions}>
-        <ActionButton label="수학 문제 찍기" onPress={onStart} />
-        <ActionButton label="사진에서 가져오기" onPress={onStart} variant="secondary" />
-        <ActionButton label="다시 찍기 안내 보기" onPress={onShowError} variant="ghost" />
+        <ActionButton label="카메라 열기" onPress={onStart} />
+        <ActionButton label="사진 선택" onPress={onStart} variant="secondary" />
+      </View>
+    </View>
+  )
+}
+
+function CameraGlyph() {
+  return (
+    <View style={styles.cameraIconShell}>
+      <View style={styles.cameraTop} />
+      <View style={styles.cameraBody}>
+        <View style={styles.cameraLens} />
       </View>
     </View>
   )
@@ -80,117 +108,6 @@ export function RecognitionScreen({
   )
 }
 
-type CoachingScreenProps = Readonly<{
-  visibility: CoachingVisibility
-  visibleHints: typeof mockCoachingResponse.hints
-  onRevealHint: () => void
-  onRevealFinal: () => void
-  onRevealSimilarAnswer: () => void
-  onReset: () => void
-}>
-
-export function CoachingScreen({
-  visibility,
-  visibleHints,
-  onRevealHint,
-  onRevealFinal,
-  onRevealSimilarAnswer,
-  onReset,
-}: CoachingScreenProps) {
-  const hasMoreHints = visibility.revealedHintCount < mockCoachingResponse.hints.length
-  const canRevealFinal = !hasMoreHints && !visibility.finalSolutionVisible
-
-  return (
-    <View style={styles.stack}>
-      <Card eyebrow="부모님 빠른 이해" title="먼저 이렇게 이해하면 좋아요">
-        <KeyValueRow label="이 문제의 핵심" value={mockCoachingResponse.parentBriefing.oneLine} />
-        <KeyValueRow
-          label="구해야 하는 것"
-          value={mockCoachingResponse.parentBriefing.whatToFind}
-        />
-        <KeyValueRow label="설명 방향" value={mockCoachingResponse.parentBriefing.whyThisMethod} />
-        <KeyValueRow label="주의할 점" value={mockCoachingResponse.parentBriefing.watchOut} />
-      </Card>
-      <Card
-        eyebrow="아이에게 먼저 물어볼 질문"
-        title={mockCoachingResponse.openingQuestion.parentScript}
-      >
-        <KeyValueRow label="질문 의도" value={mockCoachingResponse.openingQuestion.intent} />
-        <KeyValueRow
-          label="맞게 말했을 때"
-          value={mockCoachingResponse.openingQuestion.ifCorrect}
-        />
-        <KeyValueRow label="막혔을 때" value={mockCoachingResponse.openingQuestion.ifStuck} />
-      </Card>
-      {visibleHints.map((hint) => (
-        <Card key={hint.level} eyebrow={`힌트 ${hint.level.toString()}`} title={hint.title}>
-          <BodyText>{hint.parentScript}</BodyText>
-          <KeyValueRow label="이 단계의 목적" value={hint.goal} />
-          <KeyValueRow label="막히면 이어 할 말" value={hint.ifStuck} />
-        </Card>
-      ))}
-      <View style={styles.actions}>
-        <ActionButton
-          label={hasMoreHints ? "아이가 아직 막혀 있어요 · 다음 힌트" : "힌트를 모두 봤어요"}
-          onPress={onRevealHint}
-          disabled={!hasMoreHints}
-        />
-        <ActionButton
-          label="최종 풀이 보기"
-          onPress={onRevealFinal}
-          variant="secondary"
-          disabled={!canRevealFinal}
-        />
-        <ActionButton label="여기까지 이해했어요" onPress={onReset} variant="ghost" />
-      </View>
-      {visibility.finalSolutionVisible ? (
-        <FinalAndSimilar
-          similarAnswerVisible={visibility.similarProblemSolutionVisible}
-          onRevealSimilarAnswer={onRevealSimilarAnswer}
-        />
-      ) : null}
-    </View>
-  )
-}
-
-type FinalAndSimilarProps = Readonly<{
-  similarAnswerVisible: boolean
-  onRevealSimilarAnswer: () => void
-}>
-
-function FinalAndSimilar({ similarAnswerVisible, onRevealSimilarAnswer }: FinalAndSimilarProps) {
-  return (
-    <View style={styles.stack}>
-      <Card eyebrow="최종 풀이" title={mockCoachingResponse.finalSolution.answer} tone="success">
-        {mockCoachingResponse.finalSolution.steps.map((step) => (
-          <KeyValueRow key={step.expression} label={step.expression} value={step.explanation} />
-        ))}
-        <KeyValueRow label="검산" value={mockCoachingResponse.finalSolution.check} />
-        <KeyValueRow
-          label="마무리 질문"
-          value={mockCoachingResponse.finalSolution.closingQuestion}
-        />
-      </Card>
-      <Card eyebrow="비슷한 문제" title={mockCoachingResponse.similarProblem.problemText}>
-        <KeyValueRow label="왜 비슷한가요" value={mockCoachingResponse.similarProblem.whySimilar} />
-        <KeyValueRow label="첫 힌트" value={mockCoachingResponse.similarProblem.firstHint} />
-        {similarAnswerVisible ? (
-          <KeyValueRow
-            label={mockCoachingResponse.similarProblem.answer}
-            value={mockCoachingResponse.similarProblem.solutionSteps.join(" → ")}
-          />
-        ) : (
-          <ActionButton
-            label="비슷한 문제 풀이 보기"
-            onPress={onRevealSimilarAnswer}
-            variant="secondary"
-          />
-        )}
-      </Card>
-    </View>
-  )
-}
-
 type ErrorScreenProps = Readonly<{
   onRetry: () => void
   onReset: () => void
@@ -218,20 +135,109 @@ const styles = StyleSheet.create({
   stack: {
     gap: spacing.lg,
   },
-  hero: {
-    gap: spacing.md,
-    paddingVertical: spacing.md,
+  homeHero: {
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
   },
-  title: {
+  homePill: {
+    alignSelf: "flex-start",
+    minHeight: 28,
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderDefault,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceMuted,
+  },
+  homePillText: {
+    color: colors.textSecondary,
+    fontSize: typography.captionSize,
+    fontWeight: "700",
+    lineHeight: typography.captionLineHeight,
+  },
+  homeTitle: {
     color: colors.textPrimary,
     fontSize: typography.titleSize,
-    fontWeight: "700",
+    fontWeight: "800",
     lineHeight: typography.titleLineHeight,
   },
-  subtitle: {
+  homeSubtitle: {
     color: colors.textSecondary,
-    fontSize: typography.bodySize,
-    lineHeight: typography.bodyLineHeight,
+    fontSize: typography.smallSize,
+    lineHeight: typography.smallLineHeight,
+  },
+  captureArea: {
+    minHeight: 300,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.borderDefault,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceSecondary,
+    shadowColor: colors.textPrimary,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  captureAreaPressed: {
+    opacity: 0.82,
+  },
+  cameraIconShell: {
+    width: 64,
+    height: 64,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceMuted,
+  },
+  cameraTop: {
+    position: "absolute",
+    top: 17,
+    width: 20,
+    height: 10,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: colors.textPrimary,
+    borderTopLeftRadius: radius.sm,
+    borderTopRightRadius: radius.sm,
+  },
+  cameraBody: {
+    width: 40,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: spacing.sm,
+    borderWidth: 2,
+    borderColor: colors.textPrimary,
+    borderRadius: radius.md,
+  },
+  cameraLens: {
+    width: 14,
+    height: 14,
+    borderWidth: 2,
+    borderColor: colors.textPrimary,
+    borderRadius: radius.full,
+  },
+  captureTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.headlineSize,
+    fontWeight: "800",
+    lineHeight: typography.headlineLineHeight,
+    textAlign: "center",
+  },
+  captureHint: {
+    color: colors.textSecondary,
+    fontSize: typography.smallSize,
+    lineHeight: typography.smallLineHeight,
+    textAlign: "center",
   },
   actions: {
     gap: spacing.sm,

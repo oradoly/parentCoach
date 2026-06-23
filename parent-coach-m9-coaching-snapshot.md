@@ -1,0 +1,37 @@
+- generic [ref=e66] [box=24,32,342,974]:
+  - generic [ref=e67] [box=24,32,342,264]:
+    - generic [ref=e68] [box=41,49,308,16]: 질문
+    - generic [ref=e69] [box=41,73,308,54]: 전체 양과 한 컵의 양 중 무엇을 기준으로 컵 수를 구하면 좋을까?
+    - generic [ref=e70] [box=41,135,308,144]:
+      - generic [ref=e71] [box=41,135,308,68]:
+        - generic [ref=e72] [box=41,135,308,16]: 핵심
+        - generic [ref=e73] [box=41,155,308,48]: 전체 양 안에 한 컵의 양이 몇 번 들어가는지 구하는 문제예요.
+      - generic [ref=e74] [box=41,211,308,68]:
+        - generic [ref=e75] [box=41,211,308,16]: 막히면
+        - generic [ref=e76] [box=41,231,308,48]: 문제의 마지막 문장에서 무엇을 묻는지 다시 읽어 볼까?
+  - generic [ref=e77] [box=24,320,342,193]:
+    - generic [ref=e78] [box=41,337,308,16]: 힌트 1
+    - generic [ref=e79] [box=41,361,308,27]: 포함 관계 보기
+    - generic [ref=e80] [box=41,396,308,100]:
+      - generic [ref=e81] [box=41,396,308,48]: 전체 양 안에 한 컵의 양이 몇 번 들어가는지 생각해 보자.
+      - generic [ref=e82] [box=41,452,308,44]:
+        - generic [ref=e83] [box=41,452,308,16]: 막히면
+        - generic [ref=e84] [box=41,472,308,24]: 작은 컵을 하나씩 넣는다고 생각해 보자.
+  - generic [ref=e85] [box=24,537,342,160]:
+    - button "다음 힌트" [ref=e86] [cursor=pointer] [box=24,537,342,48]:
+      - generic [ref=e87] [box=165,549,59,24]: 다음 힌트
+    - button "최종 풀이 보기" [disabled] [box=24,593,342,48]:
+      - generic [ref=e88] [box=150,605,91,24]: 최종 풀이 보기
+    - button "끝내기" [ref=e89] [cursor=pointer] [box=24,649,342,48]:
+      - generic [ref=e90] [box=174,661,42,24]: 끝내기
+  - generic [ref=e91] [box=24,721,342,285]:
+    - generic [ref=e92] [box=41,738,308,27]: 도움됐나요?
+    - generic [ref=e94] [box=41,773,308,216]:
+      - button "도움이 됐어요" [ref=e95] [cursor=pointer] [box=41,773,308,48]:
+        - generic [ref=e96] [box=152,785,87,24]: 도움이 됐어요
+      - button "설명이 어려워요" [ref=e97] [cursor=pointer] [box=41,829,308,48]:
+        - generic [ref=e98] [box=145,841,101,24]: 설명이 어려워요
+      - button "문제를 잘못 읽었어요" [ref=e99] [cursor=pointer] [box=41,885,308,48]:
+        - generic [ref=e100] [box=129,897,132,24]: 문제를 잘못 읽었어요
+      - button "풀이 또는 답이 틀린 것 같아요" [ref=e101] [cursor=pointer] [box=41,941,308,48]:
+        - generic [ref=e102] [box=102,953,185,24]: 풀이 또는 답이 틀린 것 같아요

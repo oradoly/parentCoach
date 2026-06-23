@@ -1,14 +1,16 @@
 export const colors = {
-  surfacePrimary: "#F7F8FA",
+  surfacePrimary: "#FFFFFF",
   surfaceSecondary: "#FFFFFF",
-  surfaceMuted: "#EEF2F5",
-  textPrimary: "#172033",
-  textSecondary: "#5B667A",
-  borderDefault: "#D9E0E7",
-  accentPrimary: "#2563EB",
-  statusSuccess: "#15803D",
-  statusWarning: "#B45309",
-  statusError: "#B91C1C",
+  surfaceMuted: "#F4F4F4",
+  surfaceInverse: "#0A0A0A",
+  textPrimary: "#0A0A0A",
+  textSecondary: "#666666",
+  borderDefault: "#D8D8D8",
+  borderStrong: "#0A0A0A",
+  accentPrimary: "#0A0A0A",
+  statusSuccess: "#0A0A0A",
+  statusWarning: "#444444",
+  statusError: "#0A0A0A",
 } as const
 
 export const spacing = {
@@ -20,16 +22,17 @@ export const spacing = {
 } as const
 
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
+  sm: 4,
+  md: 6,
+  lg: 8,
+  full: 999,
 } as const
 
 export const typography = {
-  headlineSize: 22,
-  headlineLineHeight: 28,
-  titleSize: 28,
-  titleLineHeight: 34,
+  headlineSize: 20,
+  headlineLineHeight: 27,
+  titleSize: 32,
+  titleLineHeight: 38,
   bodySize: 16,
   bodyLineHeight: 24,
   smallSize: 14,

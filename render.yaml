@@ -1,0 +1,43 @@
+services:
+  - type: web
+    runtime: node
+    name: parent-coach-api
+    plan: free
+    region: singapore
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm --filter @parent-coach/api start
+    healthCheckPath: /health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: ENABLE_LOCAL_AI_FIXTURES
+        value: "false"
+      - key: DISABLE_RECOGNITION_MODEL
+        value: "false"
+      - key: DISABLE_COACHING_MODEL
+        value: "false"
+      - key: SESSION_TTL_MINUTES
+        value: "15"
+      - key: MAX_UPLOAD_MB
+        value: "5"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: RATE_LIMIT_SESSION_CREATE
+        value: "20"
+      - key: RATE_LIMIT_IMAGE_UPLOAD
+        value: "20"
+      - key: RATE_LIMIT_RECOGNIZE
+        value: "10"
+      - key: RATE_LIMIT_COACH
+        value: "10"
+      - key: RATE_LIMIT_FEEDBACK
+        value: "20"
+      - key: ALLOWED_WEB_ORIGINS
+        value: ""
+      - key: OPENAI_API_KEY
+        sync: false

@@ -9,6 +9,8 @@ coverage/
 **/.expo/
 .turbo/
 .playwright-mcp/
+.omo/
+.codegraph
 .env
 .env.*
 !.env.example

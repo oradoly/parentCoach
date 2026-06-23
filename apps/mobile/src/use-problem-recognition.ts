@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 
 import type {
   ConfirmedProblemResponse,
@@ -6,11 +6,11 @@ import type {
   RecognitionResponse,
 } from "@parent-coach/contracts"
 
-import {
-  DEFAULT_API_BASE_URL,
-  ProblemSessionRequestError,
-  createProblemSessionClient,
-} from "./problem-session-client"
+import { resolveProblemSessionApiBaseUrl } from "./api-base-url"
+import { createSharedInFlightCall } from "./problem-session-call-guard"
+import { createProblemSessionClient } from "./problem-session-client"
+import { createConfirmProblemRequest } from "./recognition-confirmation-rules"
+import { readProblemSessionErrorResponse } from "./problem-session-errors"
 import { canConfirmRecognition, createRecognitionRecoveryCopy } from "./recognition-flow-rules"
 
 export type ProblemRecognitionState =
@@ -34,55 +34,62 @@ export type ProblemRecognitionState =
     }
 
 const configuredApiBaseUrl = (): string => {
-  const configured = process.env["EXPO_PUBLIC_API_BASE_URL"]?.trim()
-  return configured === undefined || configured === "" ? DEFAULT_API_BASE_URL : configured
+  return resolveProblemSessionApiBaseUrl(process.env.EXPO_PUBLIC_API_BASE_URL)
 }
 
 export const useProblemRecognition = () => {
   const [state, setState] = useState<ProblemRecognitionState>({ kind: "idle" })
+  const confirmationCall = useRef(
+    createSharedInFlightCall<ConfirmedProblemResponse | null>(),
+  ).current
+  const recognitionCall = useRef(createSharedInFlightCall<RecognitionResponse | null>()).current
   const client = createProblemSessionClient({ baseUrl: configuredApiBaseUrl() })
 
   const recognizeImage = async (
     sessionId: ProblemSessionId,
   ): Promise<RecognitionResponse | null> => {
-    setState({ kind: "recognizing" })
-    try {
-      const recognition = await client.recognizeImage(sessionId)
-      if (canConfirmRecognition(recognition)) {
-        setState({ kind: "ready", recognition })
-        return recognition
-      }
+    return recognitionCall.run(`recognition:${sessionId}`, async () => {
+      setState({ kind: "recognizing" })
+      try {
+        const recognition = await client.recognizeImage(sessionId)
+        if (canConfirmRecognition(recognition)) {
+          setState({ kind: "ready", recognition })
+          return recognition
+        }
 
-      const copy = createRecognitionRecoveryCopy(recognition.status)
-      setState({
-        kind: "safe_failure",
-        recognition,
-        message: copy.message,
-        primaryActionLabel: copy.primaryActionLabel,
-        title: copy.title,
-      })
-      return recognition
-    } catch (error) {
-      if (error instanceof ProblemSessionRequestError) {
+        const copy = createRecognitionRecoveryCopy(recognition.status)
         setState({
-          kind: "error",
-          message: error.response.error.message,
-          retryable: error.response.error.retryable,
-          title: "문제를 읽지 못했어요",
+          kind: "safe_failure",
+          recognition,
+          message: copy.message,
+          primaryActionLabel: copy.primaryActionLabel,
+          title: copy.title,
         })
-        return null
+        return recognition
+      } catch (error) {
+        const errorResponse = await readProblemSessionErrorResponse(error)
+        if (errorResponse !== null) {
+          setState({
+            kind: "error",
+            message: errorResponse.error.message,
+            retryable: errorResponse.error.retryable,
+            title: "문제를 읽지 못했어요",
+          })
+          return null
+        }
+        if (error instanceof Error) {
+          setState({
+            kind: "error",
+            message:
+              "문제 인식 모델 또는 API 서버를 잠시 사용할 수 없어요. 나중에 다시 시도해 주세요.",
+            retryable: true,
+            title: "문제를 읽지 못했어요",
+          })
+          return null
+        }
+        throw error
       }
-      if (error instanceof Error) {
-        setState({
-          kind: "error",
-          message: "API 서버에 연결하지 못했어요. 서버 주소와 네트워크를 확인해 주세요.",
-          retryable: true,
-          title: "문제를 읽지 못했어요",
-        })
-        return null
-      }
-      throw error
-    }
+    })
   }
 
   const confirmProblem = async (
@@ -91,46 +98,46 @@ export const useProblemRecognition = () => {
     problemText: string,
     userEdited: boolean,
   ): Promise<ConfirmedProblemResponse | null> => {
-    setState({ kind: "confirming", recognition })
-    try {
-      const confirmation = await client.confirmProblem(sessionId, {
-        problemText,
-        recognitionStatus: recognition.status,
-        userEdited,
-        ...(recognition.normalizedText.trim() === ""
-          ? {}
-          : { normalizedText: recognition.normalizedText }),
-        ...(recognition.latex.trim() === "" ? {} : { latex: recognition.latex }),
-      })
-      setState({ kind: "confirmed", confirmation })
-      return confirmation
-    } catch (error) {
-      if (error instanceof ProblemSessionRequestError) {
-        setState({
-          kind: "error",
-          message: error.response.error.message,
-          retryable: error.response.error.retryable,
-          title: "문제 문장을 저장하지 못했어요",
-        })
-        return null
+    return confirmationCall.run(`confirmation:${sessionId}`, async () => {
+      setState({ kind: "confirming", recognition })
+      try {
+        const confirmation = await client.confirmProblem(
+          sessionId,
+          createConfirmProblemRequest(recognition, problemText, userEdited),
+        )
+        setState({ kind: "confirmed", confirmation })
+        return confirmation
+      } catch (error) {
+        const errorResponse = await readProblemSessionErrorResponse(error)
+        if (errorResponse !== null) {
+          setState({
+            kind: "error",
+            message: errorResponse.error.message,
+            retryable: errorResponse.error.retryable,
+            title: "문제 문장을 저장하지 못했어요",
+          })
+          return null
+        }
+        if (error instanceof Error) {
+          setState({
+            kind: "error",
+            message: "문제 저장 API를 잠시 사용할 수 없어요. 나중에 다시 시도해 주세요.",
+            retryable: true,
+            title: "문제 문장을 저장하지 못했어요",
+          })
+          return null
+        }
+        throw error
       }
-      if (error instanceof Error) {
-        setState({
-          kind: "error",
-          message: "API 서버에 연결하지 못했어요. 서버 주소와 네트워크를 확인해 주세요.",
-          retryable: true,
-          title: "문제 문장을 저장하지 못했어요",
-        })
-        return null
-      }
-      throw error
-    }
+    })
   }
 
   return {
     confirmProblem,
     recognizeImage,
     resetRecognition: () => {
+      confirmationCall.reset()
+      recognitionCall.reset()
       setState({ kind: "idle" })
     },
     state,

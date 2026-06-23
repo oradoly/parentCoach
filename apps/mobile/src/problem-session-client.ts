@@ -1,15 +1,21 @@
 import * as FileSystem from "expo-file-system/legacy"
 import ky, { HTTPError } from "ky"
+import { Platform } from "react-native"
 
 import {
+  coachingResponseSchema,
   confirmedProblemResponseSchema,
+  feedbackResponseSchema,
   recognitionResponseSchema,
   imageUploadResponseSchema,
   problemSessionDeletedResponseSchema,
   problemSessionErrorResponseSchema,
   temporaryProblemSessionResponseSchema,
+  type CoachingResponse,
   type ConfirmProblemRequest,
   type ConfirmedProblemResponse,
+  type FeedbackRequest,
+  type FeedbackResponse,
   type ImageUploadResponse,
   type ProblemImageSource,
   type ProblemSessionDeletedResponse,
@@ -20,8 +26,11 @@ import {
 } from "@parent-coach/contracts"
 
 import type { PreparedImageCandidate } from "./image-intake-rules"
-
-export const DEFAULT_API_BASE_URL = "http://127.0.0.1:3001"
+import { createImageUploadFormData } from "./image-upload-form-data"
+import {
+  PROBLEM_SESSION_COACHING_TIMEOUT_MS,
+  PROBLEM_SESSION_REQUEST_TIMEOUT_MS,
+} from "./problem-session-timeouts"
 
 export type ProblemSessionClient = Readonly<{
   createSession: () => Promise<TemporaryProblemSessionResponse>
@@ -31,10 +40,12 @@ export type ProblemSessionClient = Readonly<{
     source: ProblemImageSource,
   ) => Promise<ImageUploadResponse>
   recognizeImage: (sessionId: ProblemSessionId) => Promise<RecognitionResponse>
+  coachProblem: (sessionId: ProblemSessionId) => Promise<CoachingResponse>
   confirmProblem: (
     sessionId: ProblemSessionId,
     input: ConfirmProblemRequest,
   ) => Promise<ConfirmedProblemResponse>
+  submitFeedback: (sessionId: ProblemSessionId, input: FeedbackRequest) => Promise<FeedbackResponse>
   deleteSession: (sessionId: ProblemSessionId) => Promise<ProblemSessionDeletedResponse>
 }>
 
@@ -49,14 +60,47 @@ const parseUploadBody = (body: string): ImageUploadResponse => {
   return imageUploadResponseSchema.parse(parsedBody)
 }
 
-const readStructuredKyError = async (
-  error: unknown,
-): Promise<ProblemSessionErrorResponse | null> => {
-  if (!(error instanceof HTTPError)) {
+const readWebImageBlob = async (image: PreparedImageCandidate): Promise<Blob> => {
+  const response = await fetch(image.uri)
+  if (!response.ok) {
+    throw new ProblemImageUploadStatusError(response.status)
+  }
+  return response.blob()
+}
+
+type ResponseBodyReader = Readonly<{
+  text: () => Promise<string>
+}>
+
+const getErrorResponseBodyReader = (error: unknown): ResponseBodyReader | null => {
+  if (error instanceof HTTPError) {
+    return error.response
+  }
+  if (typeof error !== "object" || error === null || !("response" in error)) {
+    return null
+  }
+  const response = (error as Readonly<{ response: unknown }>).response
+  if (typeof response !== "object" || response === null || !("text" in response)) {
+    return null
+  }
+  const text = (response as Readonly<{ text: unknown }>).text
+  if (typeof text !== "function") {
     return null
   }
 
-  return parseProblemSessionErrorBody(await error.response.text())
+  const responseBodyReader = response as ResponseBodyReader
+  return { text: () => responseBodyReader.text() }
+}
+
+const readStructuredKyError = async (
+  error: unknown,
+): Promise<ProblemSessionErrorResponse | null> => {
+  const response = getErrorResponseBodyReader(error)
+  if (response === null) {
+    return null
+  }
+
+  return parseProblemSessionErrorBody(await response.text())
 }
 
 export const parseProblemSessionErrorBody = (body: string): ProblemSessionErrorResponse | null => {
@@ -78,7 +122,7 @@ export const createProblemSessionClient = ({
   const api = ky.create({
     prefix: normalizedBaseUrl,
     retry: 0,
-    timeout: 10_000,
+    timeout: PROBLEM_SESSION_REQUEST_TIMEOUT_MS,
   })
 
   return {
@@ -118,7 +162,57 @@ export const createProblemSessionClient = ({
         throw error
       }
     },
+    submitFeedback: async (sessionId, input) => {
+      try {
+        const body: unknown = await api
+          .post(`v1/problem-sessions/${sessionId}/feedback`, {
+            json: input,
+          })
+          .json()
+        return feedbackResponseSchema.parse(body)
+      } catch (error) {
+        const structuredError = await readStructuredKyError(error)
+        if (structuredError !== null) {
+          throw new ProblemSessionRequestError(structuredError)
+        }
+        throw error
+      }
+    },
+    coachProblem: async (sessionId) => {
+      try {
+        const body: unknown = await api
+          .post(`v1/problem-sessions/${sessionId}/coach`, {
+            timeout: PROBLEM_SESSION_COACHING_TIMEOUT_MS,
+          })
+          .json()
+        return coachingResponseSchema.parse(body)
+      } catch (error) {
+        const structuredError = await readStructuredKyError(error)
+        if (structuredError !== null) {
+          throw new ProblemSessionRequestError(structuredError)
+        }
+        throw error
+      }
+    },
     uploadImage: async (sessionId, image, source) => {
+      if (Platform.OS === "web") {
+        try {
+          const imageBlob = await readWebImageBlob(image)
+          const body: unknown = await api
+            .post(`v1/problem-sessions/${sessionId}/image`, {
+              body: createImageUploadFormData(image, source, imageBlob),
+            })
+            .json()
+          return imageUploadResponseSchema.parse(body)
+        } catch (error) {
+          const structuredError = await readStructuredKyError(error)
+          if (structuredError !== null) {
+            throw new ProblemImageUploadError(structuredError)
+          }
+          throw error
+        }
+      }
+
       const uploadResult = await FileSystem.uploadAsync(
         `${normalizedBaseUrl}/v1/problem-sessions/${sessionId}/image`,
         image.uri,

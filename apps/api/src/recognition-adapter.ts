@@ -6,6 +6,11 @@ import {
   type RecognitionResponse,
 } from "@parent-coach/contracts"
 
+import {
+  createLocalFixtureRecognitionAdapter,
+  isLocalAiFixtureModeEnabled,
+} from "./local-ai-fixtures"
+
 export type RecognitionAdapterInput = Readonly<{
   imageDataUrl: string
   mimeType: AcceptedImageMimeType
@@ -13,8 +18,16 @@ export type RecognitionAdapterInput = Readonly<{
   height: number
 }>
 
+export const RECOGNITION_PROMPT_VERSION = "recognition-v1.0"
+
+export type AiAdapterMetadata = Readonly<{
+  model?: string
+  promptVersion: string
+}>
+
 export type RecognitionAdapter = Readonly<{
   recognize: (input: RecognitionAdapterInput) => Promise<RecognitionResponse>
+  metadata?: AiAdapterMetadata
 }>
 
 type OpenAiRecognitionAdapterConfig = Readonly<{
@@ -35,6 +48,14 @@ export class RecognitionProviderError extends Error {
 
   constructor(readonly cause: Error) {
     super("Recognition provider request failed")
+  }
+}
+
+export class RecognitionModelDisabledError extends Error {
+  readonly name = "RecognitionModelDisabledError"
+
+  constructor() {
+    super("Recognition model is disabled")
   }
 }
 
@@ -127,6 +148,10 @@ export const createOpenAiRecognitionAdapter = ({
   const openai = new OpenAI({ apiKey })
 
   return {
+    metadata: {
+      model,
+      promptVersion: RECOGNITION_PROMPT_VERSION,
+    },
     recognize: async (input) => {
       try {
         const response = await openai.responses.create({
@@ -174,6 +199,24 @@ export const createOpenAiRecognitionAdapter = ({
 }
 
 export const createRecognitionAdapterFromEnv = (): RecognitionAdapter => {
+  const configuredModel = process.env["OPENAI_MODEL_RECOGNITION"]?.trim()
+  const model =
+    configuredModel === undefined || configuredModel === "" ? "gpt-5.5" : configuredModel
+
+  if (process.env["DISABLE_RECOGNITION_MODEL"]?.trim() === "true") {
+    return {
+      metadata: {
+        model,
+        promptVersion: RECOGNITION_PROMPT_VERSION,
+      },
+      recognize: () => Promise.reject(new RecognitionModelDisabledError()),
+    }
+  }
+
+  if (isLocalAiFixtureModeEnabled()) {
+    return createLocalFixtureRecognitionAdapter()
+  }
+
   const apiKey = process.env["OPENAI_API_KEY"]?.trim()
   if (apiKey === undefined || apiKey === "") {
     return {
@@ -181,9 +224,8 @@ export const createRecognitionAdapterFromEnv = (): RecognitionAdapter => {
     }
   }
 
-  const configuredModel = process.env["OPENAI_MODEL_RECOGNITION"]?.trim()
   return createOpenAiRecognitionAdapter({
     apiKey,
-    model: configuredModel === undefined || configuredModel === "" ? "gpt-5.5" : configuredModel,
+    model,
   })
 }

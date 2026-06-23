@@ -4,12 +4,16 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "dev": "pnpm --parallel --stream --filter @parent-coach/api --filter @parent-coach/mobile dev",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "vitest run",
-    "eval": "tsx evals/runners/recognition-contract-eval.mjs",
+    "eval": "tsx evals/runners/recognition-contract-eval.mjs && tsx evals/runners/coaching-contract-eval.mjs && tsx evals/runners/alpha-readiness-eval.ts && tsx evals/runners/internal-alpha-rehearsal.ts",
+    "phone:smoke": "node scripts/phone-smoke.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

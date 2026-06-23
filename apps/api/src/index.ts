@@ -3,6 +3,7 @@ import { serve } from "@hono/node-server"
 import { app } from "./server"
 
 const DEFAULT_PORT = 3001
+const DEFAULT_HOST = "0.0.0.0"
 
 const parsePort = (value: string | undefined): number => {
   if (value === undefined || value.trim() === "") {
@@ -18,10 +19,13 @@ const parsePort = (value: string | undefined): number => {
 }
 
 const port = parsePort(process.env["PORT"])
+const configuredHost = process.env["HOST"]?.trim()
+const host = configuredHost === "" ? DEFAULT_HOST : (configuredHost ?? DEFAULT_HOST)
 
 serve({
   fetch: app.fetch,
+  hostname: host,
   port,
 })
 
-console.log(`Parent Coach API listening on http://localhost:${port.toString()}`)
+console.log(`Parent Coach API listening on http://${host}:${port.toString()}`)

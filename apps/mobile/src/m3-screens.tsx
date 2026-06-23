@@ -1,4 +1,4 @@
-import { StyleSheet, TextInput, View } from "react-native"
+import { StyleSheet, Text, TextInput, View } from "react-native"
 
 import type { RecognitionResponse } from "@parent-coach/contracts"
 
@@ -16,11 +16,16 @@ type RecognitionProgressScreenProps = Readonly<{
 export function RecognitionProgressScreen({ onBack }: RecognitionProgressScreenProps) {
   return (
     <View style={styles.stack}>
-      <Card eyebrow="문제 인식 중" title="사진에서 문제 문장만 읽고 있어요" tone="accent">
-        <BodyText>풀이와 정답은 아직 만들지 않고, 부모님이 확인할 문장만 준비합니다.</BodyText>
+      <View style={styles.screenHeader}>
+        <Text style={styles.stepPill}>인식 중</Text>
+        <Text style={styles.screenTitle}>문제를 읽고 있어요</Text>
+        <Text style={styles.screenSubtitle}>수식과 조건만 짧게 확인합니다.</Text>
+      </View>
+      <Card title="잠시만 기다려 주세요" tone="accent">
+        <BodyText>코칭이나 풀이를 만들기 전에 문제 문장을 먼저 확인합니다.</BodyText>
       </Card>
       <View style={styles.actions}>
-        <ActionButton label="다시 고르기" onPress={onBack} variant="ghost" />
+        <ActionButton label="다시 찍기" onPress={onBack} variant="ghost" />
       </View>
     </View>
   )
@@ -51,25 +56,28 @@ export function RecognitionReviewScreen({
 }: RecognitionReviewScreenProps) {
   return (
     <View style={styles.stack}>
-      <Card eyebrow="인식 결과 확인" title="제가 이렇게 읽었어요">
+      <View style={styles.screenHeader}>
+        <Text style={styles.stepPill}>인식 결과 확인</Text>
+        <Text style={styles.screenTitle}>제가 이렇게 읽었어요</Text>
+        <Text style={styles.screenSubtitle}>숫자, 기호, 단위가 맞는지만 확인해 주세요.</Text>
+      </View>
+
+      <Card eyebrow="확인할 문제" title="이 문장을 기준으로 코칭해요" tone="accent">
         <TextInput
           accessibilityLabel="인식된 문제"
           multiline
           onChangeText={onChangeProblem}
-          style={styles.problemInput}
+          style={[styles.problemInput, isEditing ? styles.problemInputEditing : undefined]}
           textAlignVertical="top"
           value={problemDraft}
         />
         <KeyValueRow label="인식 상태" value={recognition.status} />
-        <KeyValueRow
-          label="다시 확인이 필요한 부분"
-          value={summarizeRecognitionAmbiguities(recognition)}
-        />
         <HelperText>
           {isEditing
-            ? "문제를 고친 뒤 맞아요를 눌러 주세요."
-            : createRecognitionReviewNote(recognition)}
+            ? "고친 뒤 맞아요를 눌러 주세요."
+            : summarizeRecognitionAmbiguities(recognition)}
         </HelperText>
+        <HelperText>{createRecognitionReviewNote(recognition)}</HelperText>
       </Card>
       <View style={styles.actions}>
         <ActionButton
@@ -106,12 +114,17 @@ export function RecognitionRecoveryScreen({
 }: RecognitionRecoveryScreenProps) {
   return (
     <View style={styles.stack}>
-      <Card eyebrow="다시 확인이 필요해요" title={title} tone="warning">
+      <View style={styles.screenHeader}>
+        <Text style={styles.stepPill}>다시 확인</Text>
+        <Text style={styles.screenTitle}>{title}</Text>
+        <Text style={styles.screenSubtitle}>풀이를 만들기 전에 조건을 먼저 맞춰야 해요.</Text>
+      </View>
+      <Card title={title} tone="warning">
         <BodyText>{message}</BodyText>
       </Card>
       <View style={styles.actions}>
         <ActionButton label={primaryActionLabel} onPress={onPrimaryAction} />
-        <ActionButton label="홈으로 돌아가기" onPress={onReset} variant="secondary" />
+        <ActionButton label="처음" onPress={onReset} variant="secondary" />
       </View>
     </View>
   )
@@ -121,18 +134,51 @@ const styles = StyleSheet.create({
   stack: {
     gap: spacing.lg,
   },
+  screenHeader: {
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+  },
+  stepPill: {
+    alignSelf: "flex-start",
+    minHeight: 28,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.borderDefault,
+    borderRadius: radius.full,
+    color: colors.textSecondary,
+    backgroundColor: colors.surfaceMuted,
+    fontSize: typography.captionSize,
+    fontWeight: "700",
+    lineHeight: typography.captionLineHeight,
+  },
+  screenTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.titleSize,
+    fontWeight: "800",
+    lineHeight: typography.titleLineHeight,
+  },
+  screenSubtitle: {
+    color: colors.textSecondary,
+    fontSize: typography.smallSize,
+    lineHeight: typography.smallLineHeight,
+  },
   actions: {
     gap: spacing.sm,
   },
   problemInput: {
-    minHeight: 132,
+    minHeight: 180,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.borderDefault,
-    borderRadius: radius.sm,
+    borderRadius: radius.lg,
     color: colors.textPrimary,
     backgroundColor: colors.surfacePrimary,
     fontSize: typography.bodySize,
     lineHeight: typography.bodyLineHeight,
+  },
+  problemInputEditing: {
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceSecondary,
   },
 })

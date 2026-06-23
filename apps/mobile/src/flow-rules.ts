@@ -1,4 +1,6 @@
-import type { CoachingResponse } from "@parent-coach/contracts"
+import type { CoachingResponse, FeedbackChoice, ProblemSessionId } from "@parent-coach/contracts"
+
+import type { ImageIntakeState } from "./use-image-intake"
 
 export type CoachingVisibility = Readonly<{
   revealedHintCount: number
@@ -7,7 +9,7 @@ export type CoachingVisibility = Readonly<{
 }>
 
 export const INITIAL_COACHING_VISIBILITY = {
-  revealedHintCount: 0,
+  revealedHintCount: 1,
   finalSolutionVisible: false,
   similarProblemSolutionVisible: false,
 } satisfies CoachingVisibility
@@ -31,6 +33,42 @@ export const revealSimilarProblemSolution = (
   ...visibility,
   similarProblemSolutionVisible: true,
 })
+
+export type FeedbackChoiceOption = Readonly<{
+  choice: FeedbackChoice
+  label: string
+}>
+
+export const FEEDBACK_CHOICES = [
+  { choice: "helpful", label: "도움이 됐어요" },
+  { choice: "hard_to_explain", label: "설명이 어려워요" },
+  { choice: "misread_problem", label: "문제를 잘못 읽었어요" },
+  { choice: "wrong_solution", label: "풀이 또는 답이 틀린 것 같아요" },
+] as const satisfies readonly FeedbackChoiceOption[]
+
+export const NEW_PROBLEM_ACTION_LABEL = "새 문제 시작"
+
+export const getFeedbackVisibleCopy = (
+  choices: readonly FeedbackChoiceOption[],
+): readonly string[] => choices.map((choice) => choice.label)
+
+export const getSessionCompletionActions = (): readonly string[] => [NEW_PROBLEM_ACTION_LABEL]
+
+export const getUploadedProblemSessionId = (state: ImageIntakeState): ProblemSessionId | null =>
+  state.kind === "uploaded" ? state.upload.sessionId : null
+
+export const createVerificationNotice = (coaching: CoachingResponse): string => {
+  const firstNote = coaching.verification.notes[0]
+  const notes = firstNote === undefined ? "" : ` ${firstNote}`
+
+  if (coaching.verification.status === "verified") {
+    return `계산으로 확인했어요.${notes}`
+  }
+  if (coaching.verification.status === "partially_verified") {
+    return `일부 계산을 확인했어요. 조건은 한 번 더 확인해 주세요.${notes}`
+  }
+  return `자동 검산이 어려운 문제예요. 조건을 다시 확인해 주세요.${notes}`
+}
 
 export const containsForbiddenAnswer = (
   visibleCopy: readonly string[],
@@ -65,18 +103,30 @@ export const getVisibleCoachingCopy = (
   ]
 
   if (visibility.finalSolutionVisible) {
+    const similarProblemCopy =
+      coaching.similarProblem.status === "ok"
+        ? [
+            coaching.similarProblem.problemText,
+            coaching.similarProblem.whySimilar,
+            coaching.similarProblem.firstHint,
+          ]
+        : [coaching.similarProblem.message]
+
     copy.push(
       coaching.finalSolution.answer,
+      createVerificationNotice(coaching),
       coaching.finalSolution.check,
       coaching.finalSolution.closingQuestion,
       ...coaching.finalSolution.steps.flatMap((step) => [step.expression, step.explanation]),
-      coaching.similarProblem.problemText,
-      coaching.similarProblem.whySimilar,
-      coaching.similarProblem.firstHint,
+      ...similarProblemCopy,
     )
   }
 
-  if (visibility.finalSolutionVisible && visibility.similarProblemSolutionVisible) {
+  if (
+    visibility.finalSolutionVisible &&
+    visibility.similarProblemSolutionVisible &&
+    coaching.similarProblem.status === "ok"
+  ) {
     copy.push(coaching.similarProblem.answer, ...coaching.similarProblem.solutionSteps)
   }
 

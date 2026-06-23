@@ -1,15 +1,19 @@
 import * as ImageManipulator from "expo-image-manipulator"
 import * as ImagePicker from "expo-image-picker"
 import * as FileSystem from "expo-file-system/legacy"
-import { useState } from "react"
+import { useRef, useState } from "react"
+import { Platform } from "react-native"
 
-import type { ImageUploadResponse, ProblemImageSource } from "@parent-coach/contracts"
+import type {
+  ImageUploadResponse,
+  ProblemImageSource,
+  ProblemSessionId,
+} from "@parent-coach/contracts"
 
-import {
-  DEFAULT_API_BASE_URL,
-  ProblemImageUploadError,
-  createProblemSessionClient,
-} from "./problem-session-client"
+import { resolveProblemSessionApiBaseUrl } from "./api-base-url"
+import { createSharedInFlightCall } from "./problem-session-call-guard"
+import { createProblemSessionClient } from "./problem-session-client"
+import { readProblemSessionErrorResponse } from "./problem-session-errors"
 import {
   buildImageResizePlan,
   createImageIntakeErrorCopy,
@@ -66,8 +70,7 @@ const pickerOptions = {
 } satisfies ImagePicker.ImagePickerOptions
 
 const configuredApiBaseUrl = (): string => {
-  const configured = process.env["EXPO_PUBLIC_API_BASE_URL"]?.trim()
-  return configured === undefined || configured === "" ? DEFAULT_API_BASE_URL : configured
+  return resolveProblemSessionApiBaseUrl(process.env.EXPO_PUBLIC_API_BASE_URL)
 }
 
 const createPickedImageCandidate = (asset: ImagePicker.ImagePickerAsset): PickedImageCandidate => ({
@@ -102,14 +105,24 @@ const preparePickedImage = async (
   context.release()
   renderedImage.release()
 
-  const fileInfo = await FileSystem.getInfoAsync(manipulated.uri)
-  if (!fileInfo.exists || fileInfo.isDirectory) {
-    return { kind: "invalid", reason: "invalid_size" }
+  if (Platform.OS !== "web") {
+    const fileInfo = await FileSystem.getInfoAsync(manipulated.uri)
+    if (!fileInfo.exists || fileInfo.isDirectory) {
+      return { kind: "invalid", reason: "invalid_size" }
+    }
+
+    return validateImageForUpload({
+      fileName: "problem-image.jpg",
+      fileSize: fileInfo.size,
+      height: manipulated.height,
+      mimeType: "image/jpeg",
+      uri: manipulated.uri,
+      width: manipulated.width,
+    })
   }
 
   return validateImageForUpload({
     fileName: "problem-image.jpg",
-    fileSize: fileInfo.size,
     height: manipulated.height,
     mimeType: "image/jpeg",
     uri: manipulated.uri,
@@ -163,13 +176,14 @@ const pickProblemImage = async (source: ProblemImageSource): Promise<PickProblem
 
 const permissionDeniedMessage = (reason: PermissionDeniedReason): string =>
   reason === "camera"
-    ? "카메라 권한이 꺼져 있어요. 설정에서 권한을 켜거나 사진에서 가져오기를 사용해 주세요."
+    ? "카메라 권한이 꺼져 있어요. 설정을 켜거나 사진 선택을 사용해 주세요."
     : "사진 접근 권한이 꺼져 있어요. 설정에서 권한을 켜거나 카메라로 촬영해 주세요."
 
 const unknownErrorMessage = "사진을 준비하지 못했어요. 다시 시도해 주세요."
 
 export const useImageIntake = () => {
   const [state, setState] = useState<ImageIntakeState>({ kind: "idle" })
+  const uploadCall = useRef(createSharedInFlightCall<null>()).current
   const client = createProblemSessionClient({ baseUrl: configuredApiBaseUrl() })
 
   const chooseImage = async (source: ProblemImageSource): Promise<void> => {
@@ -222,28 +236,43 @@ export const useImageIntake = () => {
       return
     }
 
-    setState({ kind: "uploading", image: state.image, source: state.source })
-    try {
-      const session = await client.createSession()
-      const upload = await client.uploadImage(session.sessionId, state.image, state.source)
-      setState({ kind: "uploaded", image: state.image, upload })
-    } catch (error) {
-      if (error instanceof ProblemImageUploadError) {
-        setState({
-          kind: "error",
-          message: error.response.error.message,
-          retryable: error.response.error.retryable,
-          title: "업로드하지 못했어요",
-        })
-        return
+    await uploadCall.run(`upload:${state.image.uri}`, async () => {
+      setState({ kind: "uploading", image: state.image, source: state.source })
+      try {
+        const session = await client.createSession()
+        const upload = await client.uploadImage(session.sessionId, state.image, state.source)
+        setState({ kind: "uploaded", image: state.image, upload })
+        return null
+      } catch (error) {
+        const errorResponse = await readProblemSessionErrorResponse(error)
+        if (errorResponse !== null) {
+          setState({
+            kind: "error",
+            message: errorResponse.error.message,
+            retryable: errorResponse.error.retryable,
+            title: "업로드하지 못했어요",
+          })
+          return null
+        }
+        if (error instanceof Error) {
+          setState({
+            kind: "error",
+            message: "API 서버에 연결하지 못했어요. 서버 주소와 네트워크를 확인해 주세요.",
+            retryable: true,
+            title: "업로드하지 못했어요",
+          })
+          return null
+        }
+        throw error
       }
+    })
+  }
+
+  const deleteUploadedSession = async (sessionId: ProblemSessionId): Promise<void> => {
+    try {
+      await client.deleteSession(sessionId)
+    } catch (error) {
       if (error instanceof Error) {
-        setState({
-          kind: "error",
-          message: "API 서버에 연결하지 못했어요. 서버 주소와 네트워크를 확인해 주세요.",
-          retryable: true,
-          title: "업로드하지 못했어요",
-        })
         return
       }
       throw error
@@ -252,7 +281,9 @@ export const useImageIntake = () => {
 
   return {
     chooseImage,
+    deleteUploadedSession,
     resetImageIntake: () => {
+      uploadCall.reset()
       setState({ kind: "idle" })
     },
     state,

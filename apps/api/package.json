@@ -6,8 +6,10 @@
   "dependencies": {
     "@hono/node-server": "2.0.5",
     "@parent-coach/contracts": "workspace:*",
+    "@parent-coach/math-validation": "workspace:*",
     "hono": "4.12.26",
-    "openai": "^6.44.0"
+    "openai": "^6.44.0",
+    "tsx": "4.22.4"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",

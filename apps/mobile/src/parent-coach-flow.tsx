@@ -1,9 +1,11 @@
+// allow: SIZE_OK — top-level Expo flow coordinator keeps the MVP state transitions visible.
 import { StatusBar } from "expo-status-bar"
 import { useMemo, useState } from "react"
 import { ScrollView, StyleSheet, View } from "react-native"
 
 import { colors, spacing } from "./design-tokens"
 import {
+  getUploadedProblemSessionId,
   INITIAL_COACHING_VISIBILITY,
   revealFinalSolution,
   revealNextHint,
@@ -11,15 +13,17 @@ import {
   type CoachingVisibility,
 } from "./flow-rules"
 import { ImageIntakeScreen } from "./m2-screens"
-import { CoachingScreen, ErrorScreen, HomeScreen } from "./m1-screens"
+import { ErrorScreen, HomeScreen } from "./m1-screens"
 import {
   RecognitionProgressScreen,
   RecognitionRecoveryScreen,
   RecognitionReviewScreen,
 } from "./m3-screens"
-import { mockCoachingResponse } from "./mock-parent-coach"
+import { CoachingProgressScreen, CoachingRecoveryScreen, CoachingScreen } from "./m4-screens"
 import { canConfirmRecognition } from "./recognition-flow-rules"
 import { useImageIntake } from "./use-image-intake"
+import { useProblemFeedback } from "./use-problem-feedback"
+import { useProblemCoaching } from "./use-problem-coaching"
 import { useProblemRecognition } from "./use-problem-recognition"
 
 type FlowStage =
@@ -28,7 +32,9 @@ type FlowStage =
   | "recognizing"
   | "recognition"
   | "recovery"
+  | "coaching_progress"
   | "coaching"
+  | "coaching_recovery"
   | "error"
 
 export function ParentCoachFlow() {
@@ -37,12 +43,17 @@ export function ParentCoachFlow() {
   const [problemDraft, setProblemDraft] = useState("")
   const [visibility, setVisibility] = useState<CoachingVisibility>(INITIAL_COACHING_VISIBILITY)
   const imageIntake = useImageIntake()
+  const problemFeedback = useProblemFeedback()
+  const problemCoaching = useProblemCoaching()
   const problemRecognition = useProblemRecognition()
 
   const canConfirmProblem = problemDraft.trim().length > 0
+  const readyCoaching =
+    problemCoaching.state.kind === "ready" ? problemCoaching.state.coaching : null
   const visibleHints = useMemo(
-    () => mockCoachingResponse.hints.slice(0, visibility.revealedHintCount),
-    [visibility.revealedHintCount],
+    () =>
+      readyCoaching === null ? [] : readyCoaching.hints.slice(0, visibility.revealedHintCount),
+    [readyCoaching, visibility.revealedHintCount],
   )
 
   const startRecognition = async () => {
@@ -52,6 +63,8 @@ export function ParentCoachFlow() {
 
     setIsEditingRecognition(false)
     setVisibility(INITIAL_COACHING_VISIBILITY)
+    problemFeedback.resetFeedback()
+    problemCoaching.resetCoaching()
     setStage("recognizing")
 
     const recognition = await problemRecognition.recognizeImage(imageIntake.state.upload.sessionId)
@@ -82,20 +95,46 @@ export function ParentCoachFlow() {
       problemDraft.trim(),
       problemDraft.trim() !== problemRecognition.state.recognition.problemText.trim(),
     )
-    if (confirmation !== null) {
+    if (confirmation === null) {
+      setStage("recovery")
+      return
+    }
+
+    setVisibility(INITIAL_COACHING_VISIBILITY)
+    setStage("coaching_progress")
+    const coaching = await problemCoaching.coachProblem(imageIntake.state.upload.sessionId)
+    if (coaching !== null) {
       setStage("coaching")
     } else {
-      setStage("recovery")
+      setStage("coaching_recovery")
     }
   }
 
   const resetFlow = () => {
+    const activeSessionId = getUploadedProblemSessionId(imageIntake.state)
+    if (activeSessionId !== null) {
+      void imageIntake.deleteUploadedSession(activeSessionId)
+    }
+
     setIsEditingRecognition(false)
     imageIntake.resetImageIntake()
+    problemFeedback.resetFeedback()
+    problemCoaching.resetCoaching()
     problemRecognition.resetRecognition()
     setProblemDraft("")
     setVisibility(INITIAL_COACHING_VISIBILITY)
     setStage("home")
+  }
+
+  const retryCoaching = async () => {
+    if (imageIntake.state.kind !== "uploaded") {
+      resetFlow()
+      return
+    }
+
+    setStage("coaching_progress")
+    const coaching = await problemCoaching.coachProblem(imageIntake.state.upload.sessionId)
+    setStage(coaching === null ? "coaching_recovery" : "coaching")
   }
 
   return (
@@ -106,9 +145,6 @@ export function ParentCoachFlow() {
           <HomeScreen
             onStart={() => {
               setStage("intake")
-            }}
-            onShowError={() => {
-              setStage("error")
             }}
           />
         ) : null}
@@ -182,18 +218,50 @@ export function ParentCoachFlow() {
             />
           ) : null
         ) : null}
-        {stage === "coaching" ? (
+        {stage === "coaching_progress" ? <CoachingProgressScreen onBack={resetFlow} /> : null}
+        {stage === "coaching_recovery" && problemCoaching.state.kind === "error" ? (
+          <CoachingRecoveryScreen
+            title={problemCoaching.state.title}
+            message={problemCoaching.state.message}
+            primaryActionLabel={problemCoaching.state.retryable ? "다시 시도하기" : "다시 시작하기"}
+            onPrimaryAction={() => {
+              if (
+                imageIntake.state.kind === "uploaded" &&
+                problemCoaching.state.kind === "error" &&
+                problemCoaching.state.retryable
+              ) {
+                void retryCoaching()
+                return
+              }
+              resetFlow()
+            }}
+            onReset={resetFlow}
+          />
+        ) : null}
+        {stage === "coaching" && readyCoaching !== null ? (
           <CoachingScreen
+            coaching={readyCoaching}
             visibility={visibility}
             visibleHints={visibleHints}
             onRevealFinal={() => {
               setVisibility(revealFinalSolution)
             }}
             onRevealHint={() => {
-              setVisibility((current) => revealNextHint(current, mockCoachingResponse.hints.length))
+              setVisibility((current) => revealNextHint(current, readyCoaching.hints.length))
             }}
             onRevealSimilarAnswer={() => {
               setVisibility(revealSimilarProblemSolution)
+            }}
+            feedbackState={problemFeedback.state}
+            onSubmitFeedback={(choice) => {
+              if (imageIntake.state.kind !== "uploaded") {
+                return
+              }
+              void problemFeedback.submitFeedback(
+                imageIntake.state.upload.sessionId,
+                choice,
+                readyCoaching,
+              )
             }}
             onReset={resetFlow}
           />

@@ -30,9 +30,9 @@ export const mockCoachingResponse = {
     difficulty: "medium",
   },
   verification: {
-    status: "verified",
-    method: "exact_rational_arithmetic",
-    notes: [],
+    status: "unverified",
+    method: "m5_validation_unavailable",
+    notes: ["검산 가능한 산술식을 찾지 못했어요."],
   },
   parentBriefing: {
     oneLine: "전체 양 안에 한 컵의 양이 몇 번 들어가는지 구하는 분수 나눗셈 문제예요.",
@@ -94,11 +94,17 @@ export const mockCoachingResponse = {
     closingQuestion: "왜 1/8을 뒤집었는지 설명해 볼래?",
   },
   similarProblem: {
+    status: "ok",
     problemText: "5/6L의 주스를 한 컵에 1/12L씩 담으려고 합니다. 모두 몇 컵에 담을 수 있나요?",
     whySimilar: "전체 양 안에 한 단위가 몇 번 들어가는지 분수 나눗셈으로 구하는 문제예요.",
     firstHint: "전체 양 ÷ 한 컵의 양으로 식을 세워 보세요.",
     answer: "10컵",
     solutionSteps: ["5/6 ÷ 1/12", "5/6 × 12", "10"],
+    verification: {
+      status: "verified",
+      method: "exact_rational_arithmetic",
+      notes: ["비슷한 문제 풀이식을 정확한 유리수 계산으로 확인했어요."],
+    },
   },
   warnings: [],
 } satisfies CoachingResponse

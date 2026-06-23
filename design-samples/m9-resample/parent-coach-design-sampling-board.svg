@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1680" viewBox="0 0 1680 1680">
+  <defs>
+    <style>
+      .bg { fill: #f5f5f3; }
+      .ink { fill: #0a0a0a; }
+      .muted { fill: #666; }
+      .soft { fill: #f7f7f5; }
+      .white { fill: #fff; }
+      .black { fill: #050505; }
+      .line { stroke: #0a0a0a; stroke-width: 2; fill: none; }
+      .thin { stroke: #d6d6d2; stroke-width: 1.5; fill: none; }
+      .hair { stroke: #ecece8; stroke-width: 1; fill: none; }
+      .title { font: 800 34px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; letter-spacing: 0; }
+      .h2 { font: 800 24px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; letter-spacing: 0; }
+      .h3 { font: 800 18px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; letter-spacing: 0; }
+      .body { font: 500 15px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; letter-spacing: 0; }
+      .small { font: 600 12px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; letter-spacing: 0; }
+      .label { font: 800 11px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; letter-spacing: .08em; }
+      .mono { font: 700 12px "SF Mono", ui-monospace, monospace; }
+      .buttonText { font: 800 15px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; letter-spacing: 0; }
+      .phoneShadow { filter: drop-shadow(0 24px 50px rgba(0,0,0,.12)); }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1680" height="1220"/>
+
+  <text x="60" y="68" class="title ink">Parent Coach 디자인 샘플링 보드</text>
+  <text x="60" y="101" class="body muted">앱 코드는 건드리지 않는 비교용 시안입니다. 각 방향은 첫 화면(문제 찍기)과 코칭 첫 화면(역질문 + 힌트 1)을 함께 보여줍니다.</text>
+
+  <!-- Column labels -->
+  <text x="545" y="146" class="label muted">FIRST SCREEN</text>
+  <text x="1032" y="146" class="label muted">AFTER CONFIRMATION</text>
+
+  <!-- Variant A -->
+  <g transform="translate(60 170)">
+    <text x="0" y="32" class="h2 ink">A. White Utility</text>
+    <text x="0" y="62" class="body muted">가장 안전한 흰 바탕. 촬영 도구처럼 보이고, 질문을 굵게 밀어줍니다.</text>
+    <text x="0" y="96" class="small muted">느낌: 차분함 / 명확함 / 내부 알파에 바로 쓰기 쉬움</text>
+
+    <g class="phoneShadow" transform="translate(500 0) scale(0.82)">
+      <rect x="0" y="0" width="300" height="560" rx="34" class="ink"/>
+      <rect x="12" y="12" width="276" height="536" rx="26" class="white"/>
+      <rect x="34" y="46" width="232" height="350" rx="8" class="line"/>
+      <text x="150" y="219" text-anchor="middle" class="h2 ink">문제 찍기</text>
+      <text x="150" y="251" text-anchor="middle" class="body muted">한 문제만 화면에 담아 주세요.</text>
+      <rect x="34" y="424" width="232" height="44" rx="5" class="black"/>
+      <text x="150" y="452" text-anchor="middle" class="buttonText white">카메라 열기</text>
+      <rect x="34" y="480" width="232" height="44" rx="5" class="line"/>
+      <text x="150" y="508" text-anchor="middle" class="buttonText ink">사진 선택</text>
+    </g>
+
+    <g class="phoneShadow" transform="translate(940 0) scale(0.82)">
+      <rect x="0" y="0" width="300" height="560" rx="34" class="ink"/>
+      <rect x="12" y="12" width="276" height="536" rx="26" class="white"/>
+      <rect x="34" y="44" width="232" height="165" rx="8" class="line"/>
+      <text x="52" y="72" class="label muted">질문</text>
+      <text x="52" y="106" class="h3 ink">무엇을 기준으로</text>
+      <text x="52" y="132" class="h3 ink">컵 수를 구하면 좋을까?</text>
+      <text x="52" y="165" class="body ink">전체 양 안에 한 컵의 양이</text>
+      <text x="52" y="187" class="body ink">몇 번 들어가는지 보는 문제예요.</text>
+
+      <rect x="34" y="235" width="232" height="145" rx="8" class="thin"/>
+      <text x="52" y="264" class="label muted">힌트 1</text>
+      <text x="52" y="298" class="h3 ink">포함 관계 보기</text>
+      <text x="52" y="331" class="body ink">작은 컵을 하나씩 넣는다고</text>
+      <text x="52" y="353" class="body ink">생각해 보자.</text>
+
+      <rect x="34" y="410" width="232" height="44" rx="5" class="black"/>
+      <text x="150" y="438" text-anchor="middle" class="buttonText white">다음 힌트</text>
+      <rect x="34" y="466" width="232" height="44" rx="5" class="thin"/>
+      <text x="150" y="494" text-anchor="middle" class="buttonText muted">최종 풀이 보기</text>
+    </g>
+  </g>
+
+  <!-- Variant B -->
+  <g transform="translate(60 650)">
+    <text x="0" y="32" class="h2 ink">B. Dark Camera</text>
+    <text x="0" y="62" class="body muted">처음부터 카메라 도구처럼 보이는 검정 화면. 몰입감은 좋지만 조금 차갑습니다.</text>
+    <text x="0" y="96" class="small muted">느낌: 집중감 / 강한 대비 / 앱 정체성이 또렷함</text>
+
+    <g class="phoneShadow" transform="translate(500 0) scale(0.82)">
+      <rect x="0" y="0" width="300" height="560" rx="34" class="ink"/>
+      <rect x="12" y="12" width="276" height="536" rx="26" class="black"/>
+      <rect x="34" y="48" width="232" height="338" rx="14" fill="#101010" stroke="#fff" stroke-width="1.5"/>
+      <path d="M70 86h42M70 86v42M230 86h-42M230 86v42M70 348h42M70 348v-42M230 348h-42M230 348v-42" stroke="#fff" stroke-width="3" fill="none"/>
+      <text x="150" y="218" text-anchor="middle" class="h2 white">문제 찍기</text>
+      <text x="150" y="251" text-anchor="middle" class="body" fill="#bdbdbd">가운데에 한 문제만</text>
+      <rect x="34" y="420" width="232" height="44" rx="5" class="white"/>
+      <text x="150" y="448" text-anchor="middle" class="buttonText ink">카메라 열기</text>
+      <rect x="34" y="480" width="232" height="44" rx="5" fill="none" stroke="#fff" stroke-width="1.5"/>
+      <text x="150" y="508" text-anchor="middle" class="buttonText white">사진 선택</text>
+    </g>
+
+    <g class="phoneShadow" transform="translate(940 0) scale(0.82)">
+      <rect x="0" y="0" width="300" height="560" rx="34" class="ink"/>
+      <rect x="12" y="12" width="276" height="536" rx="26" class="black"/>
+      <text x="36" y="62" class="label" fill="#9e9e9e">질문</text>
+      <text x="36" y="102" class="h3 white">전체와 한 컵 중</text>
+      <text x="36" y="130" class="h3 white">무엇을 기준으로 볼까?</text>
+      <line x1="36" y1="165" x2="264" y2="165" stroke="#3a3a3a"/>
+      <text x="36" y="198" class="body white">문제의 마지막 문장에서</text>
+      <text x="36" y="221" class="body white">무엇을 묻는지 다시 읽어 보자.</text>
+
+      <rect x="30" y="270" width="240" height="142" rx="8" fill="#fff"/>
+      <text x="50" y="300" class="label muted">힌트 1</text>
+      <text x="50" y="334" class="h3 ink">포함 관계 보기</text>
+      <text x="50" y="366" class="body ink">전체 양 안에 한 컵의 양이</text>
+      <text x="50" y="388" class="body ink">몇 번 들어가는지 생각해 보자.</text>
+
+      <rect x="34" y="444" width="232" height="44" rx="5" class="white"/>
+      <text x="150" y="472" text-anchor="middle" class="buttonText ink">다음 힌트</text>
+      <text x="150" y="519" text-anchor="middle" class="buttonText" fill="#8e8e8e">최종 풀이 보기</text>
+    </g>
+  </g>
+
+  <!-- Variant C -->
+  <g transform="translate(60 1145)">
+    <text x="0" y="32" class="h2 ink">C. Coaching Sheet</text>
+    <text x="0" y="62" class="body muted">짧은 코칭 메모지처럼 보이는 방향. 부모가 말할 문장을 읽기 편합니다.</text>
+    <text x="0" y="96" class="small muted">느낌: 부드러움 / 문서감 / 답풀이 앱처럼 덜 보임</text>
+
+    <g class="phoneShadow" transform="translate(500 -20) scale(0.82)">
+      <rect x="0" y="0" width="300" height="560" rx="34" class="ink"/>
+      <rect x="12" y="12" width="276" height="536" rx="26" fill="#fbfaf7"/>
+      <text x="34" y="66" class="label muted">오늘의 한 문제</text>
+      <text x="34" y="108" class="h2 ink">문제만 담아 주세요</text>
+      <rect x="34" y="144" width="232" height="255" rx="4" fill="#fff" stroke="#cfcfc7" stroke-width="1.5"/>
+      <line x1="58" y1="196" x2="242" y2="196" class="hair"/>
+      <line x1="58" y1="248" x2="242" y2="248" class="hair"/>
+      <line x1="58" y1="300" x2="242" y2="300" class="hair"/>
+      <text x="150" y="283" text-anchor="middle" class="body muted">촬영 영역</text>
+      <rect x="34" y="424" width="232" height="44" rx="4" class="black"/>
+      <text x="150" y="452" text-anchor="middle" class="buttonText white">카메라 열기</text>
+      <rect x="34" y="480" width="232" height="44" rx="4" fill="#fbfaf7" stroke="#0a0a0a" stroke-width="1.5"/>
+      <text x="150" y="508" text-anchor="middle" class="buttonText ink">사진 선택</text>
+    </g>
+
+    <g class="phoneShadow" transform="translate(940 -20) scale(0.82)">
+      <rect x="0" y="0" width="300" height="560" rx="34" class="ink"/>
+      <rect x="12" y="12" width="276" height="536" rx="26" fill="#fbfaf7"/>
+      <text x="34" y="62" class="label muted">먼저 이렇게 물어보기</text>
+      <text x="34" y="105" class="h3 ink">“전체 양 안에</text>
+      <text x="34" y="132" class="h3 ink">한 컵의 양이 몇 번</text>
+      <text x="34" y="159" class="h3 ink">들어갈까?”</text>
+      <rect x="34" y="193" width="232" height="1.5" fill="#0a0a0a"/>
+      <text x="34" y="229" class="small muted">핵심</text>
+      <text x="34" y="254" class="body ink">무엇을 구하는지 먼저</text>
+      <text x="34" y="276" class="body ink">말로 바꿔 보는 문제예요.</text>
+
+      <rect x="34" y="326" width="232" height="118" rx="4" fill="#fff" stroke="#cfcfc7" stroke-width="1.5"/>
+      <text x="52" y="356" class="label muted">힌트 1</text>
+      <text x="52" y="389" class="h3 ink">그림처럼 나누어 보기</text>
+      <text x="52" y="418" class="body ink">작은 컵을 하나씩 놓는다고</text>
+      <text x="52" y="438" class="body ink">생각해 보자.</text>
+
+      <rect x="34" y="474" width="232" height="44" rx="4" class="black"/>
+      <text x="150" y="502" text-anchor="middle" class="buttonText white">다음 힌트</text>
+    </g>
+  </g>
+</svg>

@@ -18,6 +18,7 @@
 6. 완료 판단에는 `docs/05_ACCEPTANCE_AND_EVALS.md`
 7. 우선순위에는 `docs/06_MVP_BACKLOG.md`
 8. 이미 결정된 사항은 `docs/07_DECISIONS.md`
+9. UI·디자인 작업이면 `DESIGN.md`
 
 ## 3. 제품 불변조건
 

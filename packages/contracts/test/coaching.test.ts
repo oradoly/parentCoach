@@ -26,9 +26,9 @@ const coachingFixture = {
     difficulty: "medium",
   },
   verification: {
-    status: "verified",
-    method: "exact_rational_arithmetic",
-    notes: [],
+    status: "unverified",
+    method: "provider_generation_only",
+    notes: ["서버 검산 전 원본 코칭 응답입니다."],
   },
   parentBriefing: {
     oneLine: "전체 양 안에 한 컵의 양이 몇 번 들어가는지 구하는 분수 나눗셈 문제예요.",
@@ -90,11 +90,17 @@ const coachingFixture = {
     closingQuestion: "왜 1/8을 뒤집었는지 설명해 볼래?",
   },
   similarProblem: {
+    status: "ok",
     problemText: "5/6L의 주스를 한 컵에 1/12L씩 담으려고 합니다. 모두 몇 컵에 담을 수 있나요?",
     whySimilar: "전체 양 안에 한 단위가 몇 번 들어가는지 분수 나눗셈으로 구하는 문제예요.",
     firstHint: "전체 양 ÷ 한 컵의 양으로 식을 세워 보세요.",
     answer: "10컵",
     solutionSteps: ["5/6 ÷ 1/12", "5/6 × 12", "10"],
+    verification: {
+      status: "verified",
+      method: "exact_rational_arithmetic",
+      notes: ["비슷한 문제 풀이식을 정확한 유리수 계산으로 확인했어요."],
+    },
   },
   warnings: [],
 } as const
@@ -106,6 +112,46 @@ describe("M1 parent coaching contracts", () => {
 
   it("accepts the mock coaching response shape", () => {
     expect(coachingResponseSchema.parse(coachingFixture)).toStrictEqual(coachingFixture)
+  })
+
+  it("accepts a verified similar problem with explicit status and verification", () => {
+    const response = {
+      ...coachingFixture,
+      similarProblem: {
+        status: "ok",
+        problemText: "2/3L의 주스를 한 컵에 1/6L씩 담으면 모두 몇 컵인가요?",
+        whySimilar: "전체 양 안에 한 단위가 몇 번 들어가는지 보는 같은 분수 나눗셈 문제예요.",
+        firstHint: "전체 양 ÷ 한 컵의 양으로 식을 세워 보세요.",
+        answer: "4컵",
+        solutionSteps: ["2/3 ÷ 1/6", "2/3 × 6", "4"],
+        verification: {
+          status: "verified",
+          method: "exact_rational_arithmetic",
+          notes: ["비슷한 문제 풀이식을 정확한 유리수 계산으로 확인했어요."],
+        },
+      },
+    }
+
+    const parsed = coachingResponseSchema.parse(response)
+
+    expect(parsed.similarProblem.status).toBe("ok")
+  })
+
+  it("accepts an unavailable similar problem without leaking answer fields", () => {
+    const response = {
+      ...coachingFixture,
+      similarProblem: {
+        status: "unavailable",
+        reasonCode: "validation_failed",
+        message: "비슷한 문제를 안전하게 만들지 못했어요.",
+      },
+    }
+
+    const parsed = coachingResponseSchema.parse(response)
+
+    expect(parsed.similarProblem.status).toBe("unavailable")
+    expect(JSON.stringify(parsed.similarProblem)).not.toContain("answer")
+    expect(JSON.stringify(parsed.similarProblem)).not.toContain("solutionSteps")
   })
 
   it("keeps the final answer out of hint levels 1 and 2", () => {
@@ -121,5 +167,12 @@ describe("M1 parent coaching contracts", () => {
       ])
 
     expect(earlyHintCopy.join("\n")).not.toContain(parsed.finalSolution.answer)
+  })
+
+  it("keeps raw coaching response out of verified status before server validation", () => {
+    const parsed = coachingResponseSchema.parse(coachingFixture)
+
+    expect(parsed.verification.status).toBe("unverified")
+    expect(parsed.verification.notes.join("\n")).toContain("서버 검산 전")
   })
 })

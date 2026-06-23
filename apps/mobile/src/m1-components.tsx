@@ -90,28 +90,28 @@ const cardToneStyles = StyleSheet.create({
     borderColor: colors.borderDefault,
   },
   accent: {
-    borderColor: colors.accentPrimary,
+    borderColor: colors.borderStrong,
   },
   warning: {
-    borderColor: colors.statusWarning,
+    borderColor: colors.borderStrong,
   },
   success: {
-    borderColor: colors.statusSuccess,
+    borderColor: colors.borderStrong,
   },
 })
 
 const buttonVariantStyles = StyleSheet.create({
   primary: {
-    borderColor: colors.accentPrimary,
-    backgroundColor: colors.accentPrimary,
+    borderColor: colors.surfaceInverse,
+    backgroundColor: colors.surfaceInverse,
   },
   secondary: {
-    borderColor: colors.borderDefault,
+    borderColor: colors.borderStrong,
     backgroundColor: colors.surfaceSecondary,
   },
   ghost: {
-    borderColor: colors.surfaceMuted,
-    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.borderDefault,
+    backgroundColor: colors.surfaceSecondary,
   },
 })
 
@@ -123,23 +123,23 @@ const buttonTextVariantStyles = StyleSheet.create({
     color: colors.textPrimary,
   },
   ghost: {
-    color: colors.textSecondary,
+    color: colors.textPrimary,
   },
 })
 
 const styles = StyleSheet.create({
   card: {
-    gap: spacing.md,
-    padding: spacing.lg,
+    gap: spacing.sm,
+    padding: spacing.md,
     borderWidth: 1,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSecondary,
   },
   cardBody: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   eyebrow: {
-    color: colors.accentPrimary,
+    color: colors.textSecondary,
     fontSize: typography.captionSize,
     fontWeight: "700",
     lineHeight: typography.captionLineHeight,
@@ -176,9 +176,9 @@ const styles = StyleSheet.create({
   },
   pill: {
     alignSelf: "flex-start",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
     backgroundColor: colors.surfaceMuted,
   },
   pillText: {

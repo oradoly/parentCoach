@@ -1,5 +1,16 @@
-export { coachingHintSchema, coachingResponseSchema } from "./coaching"
-export type { CoachingHint, CoachingResponse } from "./coaching"
+export {
+  coachingHintSchema,
+  coachingProviderResponseSchema,
+  coachingResponseSchema,
+  coachingVerificationSchema,
+  legacySimilarProblemCandidateSchema,
+} from "./coaching"
+export type {
+  CoachingHint,
+  CoachingProviderResponse,
+  CoachingResponse,
+  LegacySimilarProblemCandidate,
+} from "./coaching"
 export {
   createHealthResponse,
   HEALTH_SCHEMA_VERSION,
@@ -10,8 +21,15 @@ export type { HealthResponse } from "./health"
 export {
   ACCEPTED_IMAGE_MIME_TYPES,
   acceptedImageMimeTypeSchema,
+  feedbackChoiceSchema,
+  feedbackRequestSchema,
+  feedbackResponseSchema,
+  feedbackSimilarProblemStatusSchema,
   imageUploadResponseSchema,
   MAX_IMAGE_UPLOAD_BYTES,
+  operationEventSchema,
+  operationOutcomeSchema,
+  operationStageSchema,
   problemImageIdSchema,
   problemImageSourceSchema,
   problemSessionDeletedResponseSchema,
@@ -20,11 +38,16 @@ export {
   problemSessionIdSchema,
   problemSessionImageStatusSchema,
   PROBLEM_SESSION_TTL_MS,
+  requestIdSchema,
   temporaryProblemSessionResponseSchema,
   uploadedImageMetadataSchema,
 } from "./problem-session"
 export type {
   AcceptedImageMimeType,
+  FeedbackChoice,
+  FeedbackRequest,
+  FeedbackResponse,
+  FeedbackSimilarProblemStatus,
   ImageUploadResponse,
   ProblemImageId,
   ProblemImageSource,
@@ -33,6 +56,10 @@ export type {
   ProblemSessionErrorResponse,
   ProblemSessionId,
   ProblemSessionImageStatus,
+  RequestId,
+  OperationEvent,
+  OperationOutcome,
+  OperationStage,
   TemporaryProblemSessionResponse,
   UploadedImageMetadata,
 } from "./problem-session"

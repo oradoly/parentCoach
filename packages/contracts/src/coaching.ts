@@ -10,7 +10,7 @@ const classificationSchema = z.object({
   difficulty: z.union([z.literal("easy"), z.literal("medium"), z.literal("hard")]),
 })
 
-const verificationSchema = z.object({
+export const coachingVerificationSchema = z.object({
   status: z.union([
     z.literal("verified"),
     z.literal("partially_verified"),
@@ -58,6 +58,26 @@ const finalSolutionSchema = z.object({
 })
 
 const similarProblemSchema = z.object({
+  status: z.literal("ok"),
+  problemText: z.string().min(1),
+  whySimilar: z.string().min(1),
+  firstHint: z.string().min(1),
+  answer: z.string().min(1),
+  solutionSteps: z.array(z.string().min(1)).min(1),
+  verification: coachingVerificationSchema,
+})
+
+const unavailableSimilarProblemSchema = z.object({
+  status: z.literal("unavailable"),
+  reasonCode: z.union([
+    z.literal("validation_failed"),
+    z.literal("duplicate_source"),
+    z.literal("unsupported_validation"),
+  ]),
+  message: z.string().min(1),
+})
+
+export const legacySimilarProblemCandidateSchema = z.object({
   problemText: z.string().min(1),
   whySimilar: z.string().min(1),
   firstHint: z.string().min(1),
@@ -65,18 +85,32 @@ const similarProblemSchema = z.object({
   solutionSteps: z.array(z.string().min(1)).min(1),
 })
 
-export const coachingResponseSchema = z.object({
+const coachingBaseResponseSchema = z.object({
   schemaVersion: schemaVersionSchema,
   status: z.literal("ok"),
   classification: classificationSchema,
-  verification: verificationSchema,
+  verification: coachingVerificationSchema,
   parentBriefing: parentBriefingSchema,
   openingQuestion: openingQuestionSchema,
   hints: z.array(coachingHintSchema).length(3),
   finalSolution: finalSolutionSchema,
-  similarProblem: similarProblemSchema,
   warnings: z.array(z.string()),
 })
 
+export const coachingProviderResponseSchema = coachingBaseResponseSchema.extend({
+  similarProblem: legacySimilarProblemCandidateSchema,
+})
+
+export const coachingResponseSchema = coachingBaseResponseSchema.extend({
+  similarProblem: z.discriminatedUnion("status", [
+    similarProblemSchema,
+    unavailableSimilarProblemSchema,
+  ]),
+})
+
 export type CoachingHint = Readonly<z.infer<typeof coachingHintSchema>>
+export type CoachingProviderResponse = Readonly<z.infer<typeof coachingProviderResponseSchema>>
 export type CoachingResponse = Readonly<z.infer<typeof coachingResponseSchema>>
+export type LegacySimilarProblemCandidate = Readonly<
+  z.infer<typeof legacySimilarProblemCandidateSchema>
+>

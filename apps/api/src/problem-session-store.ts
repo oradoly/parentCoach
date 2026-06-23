@@ -46,6 +46,12 @@ export type UploadedProblemImageForRecognition = Readonly<{
   dataUrl: string
 }>
 
+export type ConfirmedProblemForCoaching = Readonly<{
+  problemText: string
+  normalizedText?: string
+  latex?: string
+}>
+
 type SessionLookup =
   | { readonly kind: "found"; readonly session: StoredProblemSession }
   | { readonly kind: "not_found" }
@@ -64,6 +70,7 @@ export type ProblemImageUploadInput = Readonly<{
 export type ProblemSessionStore = Readonly<{
   create: () => TemporaryProblemSessionResponse
   getActive: (sessionId: ProblemSessionId) => SessionLookup
+  getConfirmedProblem: (sessionId: ProblemSessionId) => ConfirmedProblemForCoaching | null
   getUploadedImage: (sessionId: ProblemSessionId) => UploadedProblemImageForRecognition | null
   recordUpload: (input: ProblemImageUploadInput) => ImageUploadResponse
   confirmProblem: (
@@ -150,6 +157,22 @@ export const createProblemSessionStore = (
       }
     },
     getActive,
+    getConfirmedProblem: (sessionId) => {
+      const lookup = getActive(sessionId)
+      if (lookup.kind !== "found" || lookup.session.confirmedProblem === undefined) {
+        return null
+      }
+
+      return {
+        problemText: lookup.session.confirmedProblem.problemText,
+        ...(lookup.session.confirmedProblem.normalizedText === undefined
+          ? {}
+          : { normalizedText: lookup.session.confirmedProblem.normalizedText }),
+        ...(lookup.session.confirmedProblem.latex === undefined
+          ? {}
+          : { latex: lookup.session.confirmedProblem.latex }),
+      }
+    },
     getUploadedImage: (sessionId) => {
       const lookup = getActive(sessionId)
       if (lookup.kind !== "found" || lookup.session.image === undefined) {

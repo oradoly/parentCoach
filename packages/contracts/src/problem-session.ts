@@ -15,10 +15,21 @@ export const problemImageSourceSchema = z.union([
 
 export const problemSessionIdSchema = z.string().regex(/^ps_[0-9a-f-]{36}$/)
 export const problemImageIdSchema = z.string().regex(/^img_[0-9a-f-]{36}$/)
+export const requestIdSchema = z.string().regex(/^req_[0-9a-f-]{36}$/)
 export const problemSessionImageStatusSchema = z.union([
   z.literal("empty"),
   z.literal("uploaded"),
   z.literal("deleted"),
+])
+export const feedbackChoiceSchema = z.union([
+  z.literal("helpful"),
+  z.literal("hard_to_explain"),
+  z.literal("misread_problem"),
+  z.literal("wrong_solution"),
+])
+export const feedbackSimilarProblemStatusSchema = z.union([
+  z.literal("ok"),
+  z.literal("unavailable"),
 ])
 
 export const temporaryProblemSessionResponseSchema = z.object({
@@ -64,14 +75,77 @@ export const problemSessionErrorCodeSchema = z.union([
   z.literal("RECOGNITION_FAILED"),
   z.literal("RECOGNITION_SCHEMA_INVALID"),
   z.literal("PROBLEM_TEXT_REQUIRED"),
+  z.literal("PROBLEM_NOT_CONFIRMED"),
+  z.literal("COACHING_FAILED"),
+  z.literal("COACHING_SCHEMA_INVALID"),
+  z.literal("ANSWER_LEAK_DETECTED"),
+  z.literal("VERIFICATION_FAILED"),
+  z.literal("RATE_LIMITED"),
+  z.literal("MODEL_DISABLED"),
+  z.literal("FEEDBACK_INVALID"),
 ])
 
 export const problemSessionErrorResponseSchema = z.object({
   error: z.object({
     code: problemSessionErrorCodeSchema,
     message: z.string().min(1),
+    requestId: requestIdSchema,
     retryable: z.boolean(),
   }),
+})
+
+export const operationStageSchema = z.union([
+  z.literal("session"),
+  z.literal("upload"),
+  z.literal("recognition"),
+  z.literal("confirmation"),
+  z.literal("coaching"),
+  z.literal("feedback"),
+  z.literal("delete"),
+])
+
+export const operationOutcomeSchema = z.union([
+  z.literal("success"),
+  z.literal("error"),
+  z.literal("blocked"),
+])
+
+export const operationEventSchema = z
+  .object({
+    schemaVersion: schemaVersionSchema,
+    requestId: requestIdSchema,
+    route: z.string().min(1),
+    stage: operationStageSchema,
+    outcome: operationOutcomeSchema,
+    statusCode: z.number().int().min(100).max(599),
+    latencyMs: z.number().min(0),
+    errorCode: problemSessionErrorCodeSchema.optional(),
+    model: z.string().min(1).optional(),
+    promptVersion: z.string().min(1).optional(),
+    responseSchemaVersion: schemaVersionSchema.optional(),
+    verificationStatus: z
+      .union([z.literal("verified"), z.literal("partially_verified"), z.literal("unverified")])
+      .optional(),
+    estimatedCostUnits: z.number().min(0).optional(),
+  })
+  .strict()
+
+export const feedbackRequestSchema = z
+  .object({
+    choice: feedbackChoiceSchema,
+    coachingVerificationStatus: z
+      .union([z.literal("verified"), z.literal("partially_verified"), z.literal("unverified")])
+      .optional(),
+    similarProblemStatus: feedbackSimilarProblemStatusSchema.optional(),
+  })
+  .strict()
+
+export const feedbackResponseSchema = z.object({
+  schemaVersion: schemaVersionSchema,
+  sessionId: problemSessionIdSchema,
+  requestId: requestIdSchema,
+  choice: feedbackChoiceSchema,
+  submittedAt: z.iso.datetime(),
 })
 
 export type AcceptedImageMimeType = z.infer<typeof acceptedImageMimeTypeSchema>
@@ -79,6 +153,11 @@ export type ProblemImageSource = z.infer<typeof problemImageSourceSchema>
 export type ProblemSessionId = z.infer<typeof problemSessionIdSchema>
 export type ProblemImageId = z.infer<typeof problemImageIdSchema>
 export type ProblemSessionImageStatus = z.infer<typeof problemSessionImageStatusSchema>
+export type RequestId = z.infer<typeof requestIdSchema>
+export type FeedbackChoice = z.infer<typeof feedbackChoiceSchema>
+export type FeedbackRequest = Readonly<z.infer<typeof feedbackRequestSchema>>
+export type FeedbackResponse = Readonly<z.infer<typeof feedbackResponseSchema>>
+export type FeedbackSimilarProblemStatus = z.infer<typeof feedbackSimilarProblemStatusSchema>
 export type TemporaryProblemSessionResponse = Readonly<
   z.infer<typeof temporaryProblemSessionResponseSchema>
 >
@@ -91,3 +170,6 @@ export type ProblemSessionErrorCode = z.infer<typeof problemSessionErrorCodeSche
 export type ProblemSessionErrorResponse = Readonly<
   z.infer<typeof problemSessionErrorResponseSchema>
 >
+export type OperationEvent = Readonly<z.infer<typeof operationEventSchema>>
+export type OperationOutcome = z.infer<typeof operationOutcomeSchema>
+export type OperationStage = z.infer<typeof operationStageSchema>

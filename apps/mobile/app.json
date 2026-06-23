@@ -7,6 +7,14 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.oradoly.parentcoach",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "수학 문제 한 개를 촬영해 부모님용 코칭을 준비하는 데 사용합니다.",
+        "NSPhotoLibraryUsageDescription": "사진 보관함에서 수학 문제 이미지를 선택해 부모님용 코칭을 준비하는 데 사용합니다."
+      }
+    },
     "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true
