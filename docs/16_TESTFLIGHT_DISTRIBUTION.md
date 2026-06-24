@@ -31,6 +31,7 @@ Render로 공개 HTTPS API를 먼저 올릴 때는 `docs/17_RENDER_API_DEPLOYMEN
 전역 설치 대신 최신 CLI를 일회성으로 써도 된다.
 
 ```bash
+cd apps/mobile
 npx eas-cli@latest login
 npx eas-cli@latest whoami
 ```
@@ -40,6 +41,7 @@ npx eas-cli@latest whoami
 `EXPO_PUBLIC_API_BASE_URL`은 클라이언트 번들에 포함되는 공개 설정이다. 비밀값이 아니므로 plain text로 등록한다. `OPENAI_API_KEY`는 여기에 넣지 않는다. OpenAI 키는 API 서버 환경에만 둔다.
 
 ```bash
+cd apps/mobile
 npx eas-cli@latest env:create \
   --name EXPO_PUBLIC_API_BASE_URL \
   --value https://YOUR_PUBLIC_API_HOST \
@@ -63,9 +65,10 @@ App Store Connect에서 새 앱을 만든다.
 
 ## 6. iOS production build
 
-루트에서 실행한다.
+Expo 앱 디렉터리에서 실행한다. repo 루트에서 실행하면 EAS가 루트를 Expo 앱으로 착각해 `expo` 패키지 설치를 요구할 수 있다.
 
 ```bash
+cd apps/mobile
 npx eas-cli@latest build --platform ios --profile production
 ```
 
@@ -76,6 +79,7 @@ npx eas-cli@latest build --platform ios --profile production
 build가 성공하면 최신 iOS build를 App Store Connect에 제출한다.
 
 ```bash
+cd apps/mobile
 npx eas-cli@latest submit \
   --platform ios \
   --profile production \

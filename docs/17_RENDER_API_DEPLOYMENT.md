@@ -86,6 +86,7 @@ curl -X POST https://YOUR_RENDER_SERVICE.onrender.com/v1/problem-sessions
 Render URL을 EAS production 환경 변수로 등록한다.
 
 ```bash
+cd apps/mobile
 npx eas-cli@latest env:create \
   --name EXPO_PUBLIC_API_BASE_URL \
   --value https://YOUR_RENDER_SERVICE.onrender.com \
